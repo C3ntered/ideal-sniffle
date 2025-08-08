@@ -7,9 +7,9 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // The endpoint for the 2025 NFL season's fantasy players.
-  // NOTE: This URL is unofficial and could change.
-  const ESPN_API_URL = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/2025/players?view=players_wl';
+  // The endpoint for the NFL fantasy players.
+  // NOTE: This URL is unofficial and could change. We are using 2024 for stability.
+  const ESPN_API_URL = 'https://fantasy.espn.com/apis/v3/games/ffl/seasons/2024/players?view=players_wl';
 
   try {
     const response = await fetch(ESPN_API_URL, {
