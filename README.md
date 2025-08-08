@@ -1,0 +1,2 @@
+This project is fully AI-generated. I wanted to test A, my capabilities of asking Gemini 2.5 Pro the right questions to build a fully sufficient website for an NFL draft. While the website is good, the API linking is not.
+Gemini is good at righting basic HTML and building a file for the API to be called, unfortunately it cannot connect the two files thus not allowing itself to work at full potential.
