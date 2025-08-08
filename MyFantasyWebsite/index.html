@@ -155,16 +155,17 @@
                     }
                     const filteredData = await response.json();
                     
-                    this.state.players = filteredData.map((p, index) => ({
+                    this.state.players = filteredData
+                        .map((p, index) => ({
                             id: p.player_id,
-                            ovr: p.adp || index + 1,
+                            ovr: p.adp || 9999, // Assign a high number if ADP is null
                             name: p.full_name,
                             pos: p.position,
                             team: p.team,
-                            tier: 1,
-                            pprRk: p.adp_ppr || index + 1
+                            tier: 1, // Default tier
+                            pprRk: p.adp_ppr || 9999
                         }))
-                        .sort((a, b) => a.ovr - b.ovr);
+                        .sort((a, b) => a.ovr - b.ovr); // Sort by overall rank
 
                     this.state.filteredPlayers = this.state.players;
 
