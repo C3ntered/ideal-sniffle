@@ -148,24 +148,21 @@
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
-                    const functionUrl = `${window.location.origin}/.netlify/functions/sleeper`;
+                    const functionUrl = `/.netlify/functions/sleeper`;
                     const response = await fetch(functionUrl);
                     if (!response.ok) {
                         throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
                     }
-                    const data = await response.json();
+                    const filteredData = await response.json();
                     
-                    this.state.players = Object.values(data)
-                        .filter(p => p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
-                        .map((p, index) => ({
+                    this.state.players = filteredData.map((p, index) => ({
                             id: p.player_id,
-                            ovr: p.fantasy_data?.adp || index + 1,
-                            name: `${p.first_name} ${p.last_name}`,
+                            ovr: p.adp || index + 1,
+                            name: p.full_name,
                             pos: p.position,
-                            team: p.team || 'FA',
+                            team: p.team,
                             tier: 1,
-                            pprRk: p.fantasy_data?.ppr?.rank_ppr || index + 1,
-                            stdRk: p.fantasy_data?.standard?.rank_std || index + 1,
+                            pprRk: p.adp_ppr || index + 1
                         }))
                         .sort((a, b) => a.ovr - b.ovr);
 
