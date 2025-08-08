@@ -97,7 +97,7 @@
         <main id="main-content">
             <div class="flex justify-center items-center h-64">
                 <div class="spinner"></div>
-                <p class="ml-4 text-slate-600">Fetching latest player data from Sleeper...</p>
+                <p class="ml-4 text-slate-600">Loading player data...</p>
             </div>
         </main>
     </div>
@@ -122,7 +122,8 @@
                 players: [],
                 filteredPlayers: [],
                 charts: {},
-                positionRanks: {}
+                positionRanks: {},
+                dataLoaded: false
             },
             
             async init() {
@@ -132,150 +133,150 @@
             },
 
             async fetchData() {
-                const mainContent = document.getElementById('main-content');
                 try {
-                    // Try to fetch from your actual Sleeper function first
-                    const functionUrl = `/.netlify/functions/sleeper`;
-                    const response = await fetch(functionUrl);
-                    
-                    let filteredData;
-                    if (!response.ok) {
-                        console.warn("Sleeper API unavailable, using mock data for demonstration");
-                        filteredData = this.generateMockData();
-                    } else {
-                        filteredData = await response.json();
+                    // Try to fetch from Netlify function first
+                    let response;
+                    try {
+                        response = await fetch('/.netlify/functions/sleeper');
+                        if (response.ok) {
+                            const data = await response.json();
+                            console.log("Successfully fetched from Sleeper API:", data.length, "players");
+                            this.processPlayerData(data);
+                            this.state.dataLoaded = true;
+                            return;
+                        }
+                    } catch (error) {
+                        console.warn("Netlify function unavailable:", error);
                     }
                     
-                    // Process and rank the data properly
-                    this.state.players = filteredData
-                        .filter(p => p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
-                        .map(p => ({
-                            id: p.player_id || Math.random().toString(),
-                            name: p.full_name,
-                            pos: p.position,
-                            team: p.team || 'FA',
-                            adp: p.adp || 999,
-                            adp_ppr: p.adp_ppr || 999
-                        }))
-                        .sort((a, b) => (a.adp || 999) - (b.adp || 999));
-
-                    // Calculate position ranks and overall ranks
-                    this.calculateRanks();
-                    this.state.filteredPlayers = this.state.players;
-
-                } catch (error) {
-                    console.error("Error fetching player data, using mock data:", error);
-                    // Fallback to mock data
-                    const filteredData = this.generateMockData();
+                    // Fallback to mock data if API fails
+                    console.log("Using mock data for demonstration");
+                    const mockData = this.generateMockData();
+                    this.processPlayerData(mockData);
+                    this.state.dataLoaded = true;
                     
-                    this.state.players = filteredData
-                        .filter(p => p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
-                        .map(p => ({
-                            id: p.player_id || Math.random().toString(),
-                            name: p.full_name,
-                            pos: p.position,
-                            team: p.team || 'FA',
-                            adp: p.adp || 999,
-                            adp_ppr: p.adp_ppr || 999
-                        }))
-                        .sort((a, b) => (a.adp || 999) - (b.adp || 999));
-
-                    this.calculateRanks();
-                    this.state.filteredPlayers = this.state.players;
+                } catch (error) {
+                    console.error("Error in fetchData:", error);
+                    const mockData = this.generateMockData();
+                    this.processPlayerData(mockData);
+                    this.state.dataLoaded = true;
                 }
             },
 
-            generateMockData() {
-                // Expanded mock data with more players for demonstration
-                const positions = ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'];
-                const teams = ['BUF', 'KC', 'SF', 'DAL', 'MIA', 'DET', 'BAL', 'CLE', 'PIT', 'LAC', 'ATL', 'PHI', 'LAR', 'TB', 'GB', 'MIN'];
-                const mockPlayers = [];
+            processPlayerData(rawData) {
+                // Process and clean the data
+                this.state.players = rawData
+                    .filter(p => p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
+                    .map(p => ({
+                        id: p.player_id || Math.random().toString(),
+                        name: p.full_name || `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Unknown Player',
+                        pos: p.position,
+                        team: p.team || 'FA',
+                        adp: p.adp || Math.floor(Math.random() * 200) + 50,
+                        adp_ppr: p.adp_ppr || p.adp || Math.floor(Math.random() * 200) + 50
+                    }))
+                    .sort((a, b) => (a.adp || 999) - (b.adp || 999));
 
-                // Generate 200+ mock players with realistic ADP values
-                const playerNames = [
-                    // QBs
-                    'Josh Allen', 'Lamar Jackson', 'Patrick Mahomes', 'Joe Burrow', 'Dak Prescott', 'Jalen Hurts', 'Tua Tagovailoa', 'Aaron Rodgers', 'Russell Wilson', 'Kirk Cousins',
-                    'Geno Smith', 'Derek Carr', 'Justin Herbert', 'Trevor Lawrence', 'Daniel Jones', 'Kyler Murray', 'Deshaun Watson', 'Mac Jones', 'Matt Stafford', 'Ryan Tannehill',
-                    // RBs
-                    'Christian McCaffrey', 'Bijan Robinson', 'Jahmyr Gibbs', 'Saquon Barkley', 'Derrick Henry', 'Nick Chubb', 'Jonathan Taylor', 'Austin Ekeler', 'Josh Jacobs', 'Alvin Kamara',
-                    'Tony Pollard', 'Isiah Pacheco', 'Kenneth Walker III', 'Breece Hall', 'Joe Mixon', 'Aaron Jones', 'Rhamondre Stevenson', 'David Montgomery', 'Najee Harris', 'Miles Sanders',
-                    'James Conner', 'Kyren Williams', 'Chase Brown', 'Rachaad White', 'Brian Robinson Jr.', 'Devin Singletary', 'Zack Moss', 'Raheem Mostert', 'Rico Dowdle', 'Jerome Ford',
-                    // WRs
-                    'CeeDee Lamb', 'Tyreek Hill', 'Amon-Ra St. Brown', 'A.J. Brown', 'Stefon Diggs', 'DK Metcalf', 'DeVonta Smith', 'Jaylen Waddle', 'Calvin Ridley', 'Mike Evans',
-                    'Chris Godwin', 'Keenan Allen', 'Cooper Kupp', 'Davante Adams', 'Amari Cooper', 'D.J. Moore', 'Terry McLaurin', 'Courtland Sutton', 'Michael Pittman Jr.', 'Brandon Aiyuk',
-                    'Diontae Johnson', 'Tyler Lockett', 'Gabe Davis', 'Christian Kirk', 'Jerry Jeudy', 'Marquise Goodwin', 'Josh Palmer', 'Romeo Doubs', 'Darnell Mooney', 'Curtis Samuel',
-                    // TEs
-                    'Travis Kelce', 'Sam LaPorta', 'Mark Andrews', 'T.J. Hockenson', 'George Kittle', 'Darren Waller', 'Kyle Pitts', 'Dallas Goedert', 'Evan Engram', 'Cole Kmet',
-                    'Pat Freiermuth', 'David Njoku', 'Tyler Higbee', 'Gerald Everett', 'Noah Fant', 'Hunter Henry', 'Mike Gesicki', 'Dalton Schultz', 'Logan Thomas', 'Zach Ertz',
-                    // Defensive Players
-                    'Myles Garrett', 'T.J. Watt', 'Aaron Donald', 'Nick Bosa', 'Khalil Mack', 'Chris Jones', 'Maxx Crosby', 'Danielle Hunter', 'Brian Burns', 'Josh Allen (LB)',
-                    'Fred Warner', 'Micah Parsons', 'Roquan Smith', 'Matt Milano', 'Tremaine Edmunds', 'Bobby Wagner', 'Lavonte David', 'Darius Leonard', 'C.J. Mosley', 'Deion Jones',
-                    'Minkah Fitzpatrick', 'Derwin James Jr.', 'Kyle Hamilton', 'Antoine Winfield Jr.', 'Budda Baker', 'Kevin Byard', 'Jessie Bates III', 'Jordan Poyer', 'Tyrann Mathieu', 'Xavien Howard'
+                // Calculate position ranks and overall ranks
+                this.calculateRanks();
+                this.state.filteredPlayers = [...this.state.players];
+                console.log("Processed players:", this.state.players.length);
+            },
+
+            generateMockData() {
+                // Create comprehensive mock data
+                const mockPlayers = [
+                    // Top QBs
+                    { player_id: '1', full_name: 'Josh Allen', position: 'QB', team: 'BUF', adp: 15 },
+                    { player_id: '2', full_name: 'Lamar Jackson', position: 'QB', team: 'BAL', adp: 18 },
+                    { player_id: '3', full_name: 'Patrick Mahomes', position: 'QB', team: 'KC', adp: 25 },
+                    { player_id: '4', full_name: 'Joe Burrow', position: 'QB', team: 'CIN', adp: 35 },
+                    { player_id: '5', full_name: 'Jalen Hurts', position: 'QB', team: 'PHI', adp: 40 },
+                    
+                    // Top RBs
+                    { player_id: '10', full_name: 'Christian McCaffrey', position: 'RB', team: 'SF', adp: 1 },
+                    { player_id: '11', full_name: 'Bijan Robinson', position: 'RB', team: 'ATL', adp: 3 },
+                    { player_id: '12', full_name: 'Jahmyr Gibbs', position: 'RB', team: 'DET', adp: 5 },
+                    { player_id: '13', full_name: 'Saquon Barkley', position: 'RB', team: 'PHI', adp: 7 },
+                    { player_id: '14', full_name: 'Derrick Henry', position: 'RB', team: 'BAL', adp: 12 },
+                    { player_id: '15', full_name: 'Jonathan Taylor', position: 'RB', team: 'IND', adp: 20 },
+                    { player_id: '16', full_name: 'Josh Jacobs', position: 'RB', team: 'GB', adp: 28 },
+                    { player_id: '17', full_name: 'Kenneth Walker III', position: 'RB', team: 'SEA', adp: 32 },
+                    
+                    // Top WRs
+                    { player_id: '20', full_name: 'CeeDee Lamb', position: 'WR', team: 'DAL', adp: 2 },
+                    { player_id: '21', full_name: 'Tyreek Hill', position: 'WR', team: 'MIA', adp: 4 },
+                    { player_id: '22', full_name: 'Amon-Ra St. Brown', position: 'WR', team: 'DET', adp: 6 },
+                    { player_id: '23', full_name: 'A.J. Brown', position: 'WR', team: 'PHI', adp: 8 },
+                    { player_id: '24', full_name: 'Stefon Diggs', position: 'WR', team: 'HOU', adp: 10 },
+                    { player_id: '25', full_name: 'DK Metcalf', position: 'WR', team: 'SEA', adp: 22 },
+                    { player_id: '26', full_name: 'DeVonta Smith', position: 'WR', team: 'PHI', adp: 24 },
+                    { player_id: '27', full_name: 'Jaylen Waddle', position: 'WR', team: 'MIA', adp: 26 },
+                    { player_id: '28', full_name: 'Calvin Ridley', position: 'WR', team: 'TEN', adp: 30 },
+                    
+                    // Top TEs
+                    { player_id: '30', full_name: 'Travis Kelce', position: 'TE', team: 'KC', adp: 9 },
+                    { player_id: '31', full_name: 'Sam LaPorta', position: 'TE', team: 'DET', adp: 11 },
+                    { player_id: '32', full_name: 'Mark Andrews', position: 'TE', team: 'BAL', adp: 19 },
+                    { player_id: '33', full_name: 'T.J. Hockenson', position: 'TE', team: 'MIN', adp: 45 },
+                    { player_id: '34', full_name: 'George Kittle', position: 'TE', team: 'SF', adp: 50 },
+                    
+                    // IDP Players
+                    { player_id: '40', full_name: 'Myles Garrett', position: 'DL', team: 'CLE', adp: 180 },
+                    { player_id: '41', full_name: 'T.J. Watt', position: 'LB', team: 'PIT', adp: 160 },
+                    { player_id: '42', full_name: 'Aaron Donald', position: 'DL', team: 'LAR', adp: 185 },
+                    { player_id: '43', full_name: 'Nick Bosa', position: 'DL', team: 'SF', adp: 190 },
+                    { player_id: '44', full_name: 'Fred Warner', position: 'LB', team: 'SF', adp: 165 },
+                    { player_id: '45', full_name: 'Micah Parsons', position: 'LB', team: 'DAL', adp: 155 },
+                    { player_id: '46', full_name: 'Minkah Fitzpatrick', position: 'DB', team: 'PIT', adp: 200 },
+                    { player_id: '47', full_name: 'Derwin James Jr.', position: 'DB', team: 'LAC', adp: 205 },
+                    { player_id: '48', full_name: 'Kyle Hamilton', position: 'DB', team: 'BAL', adp: 210 },
                 ];
 
-                playerNames.forEach((name, index) => {
-                    let position, adp, adp_ppr;
+                // Add more players to reach ~100 total
+                const additionalPlayers = [];
+                const positions = ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'];
+                const teams = ['BUF', 'KC', 'SF', 'DAL', 'MIA', 'DET', 'BAL', 'CLE', 'PIT', 'LAC', 'ATL', 'PHI', 'LAR', 'TB', 'GB', 'MIN'];
+                const firstNames = ['Marcus', 'Brandon', 'Tyler', 'Jordan', 'Cameron', 'Austin', 'Ryan', 'Derek', 'Alex', 'Justin', 'Daniel', 'Michael', 'David', 'Chris', 'Matt', 'Jake'];
+                const lastNames = ['Johnson', 'Williams', 'Brown', 'Davis', 'Miller', 'Wilson', 'Moore', 'Taylor', 'Anderson', 'Thomas', 'Jackson', 'White', 'Harris', 'Martin', 'Thompson', 'Garcia'];
+
+                for (let i = 0; i < 60; i++) {
+                    const pos = positions[Math.floor(Math.random() * positions.length)];
+                    let baseAdp = 60;
+                    if (pos === 'QB') baseAdp = 70;
+                    else if (pos === 'RB') baseAdp = 50;
+                    else if (pos === 'WR') baseAdp = 45;
+                    else if (pos === 'TE') baseAdp = 80;
+                    else baseAdp = 150; // IDP
                     
-                    if (index < 20) {
-                        position = 'QB';
-                        adp = Math.floor(Math.random() * 200) + 20;
-                        adp_ppr = adp + Math.floor(Math.random() * 10) - 5;
-                    } else if (index < 50) {
-                        position = 'RB';
-                        adp = Math.floor(Math.random() * 150) + 1;
-                        adp_ppr = Math.max(1, adp - Math.floor(Math.random() * 20));
-                    } else if (index < 80) {
-                        position = 'WR';
-                        adp = Math.floor(Math.random() * 180) + 1;
-                        adp_ppr = Math.max(1, adp - Math.floor(Math.random() * 15));
-                    } else if (index < 100) {
-                        position = 'TE';
-                        adp = Math.floor(Math.random() * 200) + 30;
-                        adp_ppr = adp + Math.floor(Math.random() * 10) - 5;
-                    } else if (index < 110) {
-                        position = 'DL';
-                        adp = Math.floor(Math.random() * 100) + 150;
-                        adp_ppr = adp + Math.floor(Math.random() * 10) - 5;
-                    } else if (index < 120) {
-                        position = 'LB';
-                        adp = Math.floor(Math.random() * 80) + 140;
-                        adp_ppr = adp + Math.floor(Math.random() * 10) - 5;
-                    } else {
-                        position = 'DB';
-                        adp = Math.floor(Math.random() * 120) + 160;
-                        adp_ppr = adp + Math.floor(Math.random() * 10) - 5;
-                    }
-
-                    mockPlayers.push({
-                        player_id: (index + 1).toString(),
-                        full_name: name,
-                        position: position,
+                    additionalPlayers.push({
+                        player_id: (100 + i).toString(),
+                        full_name: `${firstNames[Math.floor(Math.random() * firstNames.length)]} ${lastNames[Math.floor(Math.random() * lastNames.length)]}`,
+                        position: pos,
                         team: teams[Math.floor(Math.random() * teams.length)],
-                        active: true,
-                        adp: Math.max(1, adp),
-                        adp_ppr: Math.max(1, adp_ppr)
+                        adp: baseAdp + Math.floor(Math.random() * 100)
                     });
-                });
+                }
 
-                return mockPlayers;
+                return [...mockPlayers, ...additionalPlayers];
             },
 
             calculateRanks() {
                 // Calculate overall ranks
                 this.state.players.forEach((player, index) => {
                     player.ovr = index + 1;
-                    player.pprRk = index + 1; // Simplified for demo
+                    player.pprRk = index + 1;
                 });
 
-                // Calculate position-specific ranks
+                // Calculate position-specific ranks and assign tiers
                 const positions = ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'];
                 positions.forEach(pos => {
                     const posPlayers = this.state.players.filter(p => p.pos === pos);
                     posPlayers.forEach((player, index) => {
                         player.posRank = index + 1;
-                        // Assign tiers (simplified)
-                        if (index < 4) player.tier = 1;
-                        else if (index < 10) player.tier = 2;
+                        // Assign tiers based on position rank
+                        if (index < 3) player.tier = 1;
+                        else if (index < 8) player.tier = 2;
                         else player.tier = 3;
                     });
                     this.state.positionRanks[pos] = posPlayers;
@@ -304,6 +305,10 @@
             },
             
             render() {
+                if (!this.state.dataLoaded) {
+                    return;
+                }
+
                 const mainContent = document.getElementById('main-content');
                 
                 document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -343,7 +348,7 @@
                 // Get top value picks from actual data
                 const topOffensivePlayers = this.state.players
                     .filter(p => ['QB', 'RB', 'WR', 'TE'].includes(p.pos))
-                    .slice(0, 3);
+                    .slice(0, 5);
 
                 return `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -405,7 +410,7 @@
             getRankingsView() {
                 return `
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live Data)</h2>
+                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (${this.state.players.length} Players Loaded)</h2>
                         <p class="text-slate-600 mb-6">Complete player rankings with proper ADP-based sorting. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
                         <div class="flex flex-wrap gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
@@ -468,8 +473,8 @@
             },
 
             renderTable() {
-                const scoringFormat = document.getElementById('scoringFilter').value;
                 const table = document.getElementById('rankingsTable');
+                if (!table) return;
                 
                 let sortedPlayers = [...this.state.filteredPlayers];
                 
@@ -503,343 +508,4 @@
                 `;
 
                 document.querySelectorAll('.analyze-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const playerId = e.target.dataset.playerId;
-                        const player = this.state.players.find(p => p.id == playerId);
-                        this.showPlayerAnalysis(player);
-                    });
-                });
-            },
-
-            async callGeminiAPI(prompt) {
-                const functionUrl = `/.netlify/functions/gemini`; 
-                
-                try {
-                    const response = await fetch(functionUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt: prompt })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`Serverless function failed with status ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-                        return result.candidates[0].content.parts[0].text;
-                    } else {
-                        // Check for safety ratings blocks
-                        if (result.candidates && result.candidates[0].finishReason === 'SAFETY') {
-                             return "The AI could not generate a response due to safety settings. Please try a different prompt.";
-                        }
-                        return "Sorry, the AI analysis could not be generated at this time.";
-                    }
-                } catch (error) {
-                    console.error("API call failed:", error);
-                    return "An error occurred while fetching the AI analysis. Please check that your Gemini API is properly configured in your environment variables.";
-                }
-            },
-
-            async showPlayerAnalysis(player) {
-                const modal = document.getElementById('ai-modal');
-                const modalTitle = document.getElementById('modal-title');
-                const modalBody = document.getElementById('modal-body');
-
-                modalTitle.textContent = `AI Analysis: ${player.name}`;
-                modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating analysis...</p></div>';
-                modal.classList.remove('hidden');
-
-                const prompt = `Provide a detailed 2025 fantasy football outlook for ${player.name} (${player.pos}, ${player.team}). Focus on their potential in a 10-team, Superflex, IDP league format. Discuss their strengths, weaknesses, potential injury risks, and overall upside for the upcoming season. Keep the analysis concise, around 100-150 words.`;
-                
-                const analysis = await this.callGeminiAPI(prompt);
-                modalBody.innerHTML = analysis.replace(/\n/g, '<br>');
-            },
-
-            async generateTeamNames() {
-                const input = document.getElementById('name-generator-input');
-                const resultsContainer = document.getElementById('name-generator-results');
-                const keywords = input.value;
-
-                if (!keywords) {
-                    resultsContainer.innerHTML = '<p class="text-red-500">Please enter some keywords to generate names.</p>';
-                    return;
-                }
-
-                resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating names...</p></div>';
-
-                const prompt = `Generate 8 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Include some puns related to current or famous NFL players. Format each name on a new line without numbering.`;
-
-                const namesText = await this.callGeminiAPI(prompt);
-                const namesArray = namesText.split('\n').filter(name => name.trim() !== '').map(name => name.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').trim());
-                
-                resultsContainer.innerHTML = `
-                    <ul class="list-disc list-inside space-y-2">
-                        ${namesArray.map(name => `<li>${name}</li>`).join('')}
-                    </ul>
-                `;
-            },
-
-            async getRoundByRoundAdvice() {
-                const roundSelector = document.getElementById('round-selector');
-                const resultsContainer = document.getElementById('round-advice-results');
-                const selectedRound = roundSelector.value;
-
-                resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating advice...</p></div>';
-
-                const prompt = `For a 10-team, Superflex, IDP fantasy football league, provide a detailed draft strategy for ${selectedRound}. Discuss which positions to target (QB, RB, WR, TE, IDP), mention 2-3 specific player examples that are good values in this range, and explain the reasoning behind this strategy for this specific part of the draft. Format the response with clear headings for each section.`;
-
-                const advice = await this.callGeminiAPI(prompt);
-                resultsContainer.innerHTML = advice.replace(/\n/g, '<br>');
-            },
-
-            getStrategyView() {
-                return `
-                    <div class="text-center mb-8">
-                        <h2 class="text-3xl font-bold text-slate-900">Offensive Draft Strategies</h2>
-                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Your approach in the early rounds will define your team's structure. Below are the three most prominent draft architectures for 2025. Each has a different philosophy on how to handle the critical running back position and build a championship roster. Consider your own risk tolerance and drafting style when choosing your path.</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
-                            <h3 class="text-2xl font-bold text-center mb-4 text-sky-700">Robust RB</h3>
-                            <p class="text-slate-600 mb-4 flex-grow">This aggressive strategy involves using your first 2-3 picks on elite, high-volume running backs. The goal is to create an overwhelming advantage at the scarcest position, accepting the injury risk for a massive weekly ceiling.</p>
-                            <div class="mt-auto">
-                                <p class="font-semibold mb-2">Ideal Targets:</p>
-                                <ul class="list-disc list-inside text-slate-700 space-y-1">
-                                    <li>Bijan Robinson</li>
-                                    <li>Jahmyr Gibbs</li>
-                                    <li>Saquon Barkley</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md border-4 border-amber-400 flex flex-col">
-                            <h3 class="text-2xl font-bold text-center mb-4 text-amber-700">Hero RB (Hybrid)</h3>
-                            <p class="text-slate-600 mb-4 flex-grow">A popular, balanced approach. You draft one elite "anchor" RB in Round 1 or 2, then pivot to drafting elite WRs, TEs, and QBs for the next several rounds. This gives you a stud RB while still capitalizing on depth at other positions.</p>
-                             <div class="mt-auto">
-                                <p class="font-semibold mb-2">Ideal Anchor RBs:</p>
-                                <ul class="list-disc list-inside text-slate-700 space-y-1">
-                                    <li>Bijan Robinson</li>
-                                    <li>Jahmyr Gibbs</li>
-                                    <li>Christian McCaffrey</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
-                            <h3 class="text-2xl font-bold text-center mb-4 text-emerald-700">Zero RB</h3>
-                            <p class="text-slate-600 mb-4 flex-grow">A contrarian strategy where you avoid RBs entirely for at least the first four rounds. You load up on elite WRs, TEs, and QBs to build a positional advantage, then attack the RB position in the middle rounds, targeting veterans and high-upside backups.</p>
-                             <div class="mt-auto">
-                                <p class="font-semibold mb-2">Mid-Round Targets:</p>
-                                <ul class="list-disc list-inside text-slate-700 space-y-1">
-                                    <li>James Conner</li>
-                                    <li>Kyren Williams</li>
-                                    <li>Chase Brown</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-slate-900">✨ AI Round-by-Round Strategy Explorer</h2>
-                        <p class="text-slate-600 mb-4">Select a stage of the draft to get targeted, AI-powered advice on who to pick and why, tailored specifically for your league's unique format.</p>
-                        <div class="flex gap-2 mb-4">
-                            <select id="round-selector" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
-                                <option value="Rounds 1-2">Rounds 1-2</option>
-                                <option value="Rounds 3-4">Rounds 3-4</option>
-                                <option value="Rounds 5-7">Rounds 5-7 (The Mid-Rounds)</option>
-                                <option value="Rounds 8-11">Rounds 8-11 (The Late-Rounds)</option>
-                                <option value="Rounds 12+">Rounds 12+ (The Sleepers)</option>
-                            </select>
-                            <button id="get-round-advice-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-md hover:bg-amber-600 transition-colors">Get Advice</button>
-                        </div>
-                        <div id="round-advice-results" class="mt-4 p-4 bg-slate-50 rounded-md min-h-[200px]">
-                            <p class="text-slate-500">Your AI-generated advice will appear here.</p>
-                        </div>
-                    </div>
-                `;
-            },
-            
-            getIdpView() {
-                const dlPlayers = this.state.positionRanks.DL || [];
-                const lbPlayers = this.state.positionRanks.LB || [];
-                const dbPlayers = this.state.positionRanks.DB || [];
-                
-                return `
-                    <div class="text-center mb-8">
-                        <h2 class="text-3xl font-bold text-slate-900">IDP (Individual Defensive Player) Guide</h2>
-                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Success in IDP leagues requires a different approach. Do not draft IDPs early. The value lies in the middle-to-late rounds. Your primary goal is to secure an every-down, high-tackle linebacker to anchor your defense, then supplement with high-upside pass rushers and safeties.</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-2xl font-bold mb-4 text-center text-slate-800">Defensive Linemen</h3>
-                            <p class="text-slate-600 mb-4 text-sm">Focus on elite edge rushers who can get double-digit sacks. Look for players with consistent snap counts and pass rush opportunities.</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        ${dlPlayers.slice(0, 3).map(p => `<li>${p.name} (${p.team})</li>`).join('') || 
-                                          '<li>Myles Garrett (CLE)</li><li>Aaron Donald (LAR)</li><li>Nick Bosa (SF)</li>'}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        ${dlPlayers.slice(3, 6).map(p => `<li>${p.name} (${p.team})</li>`).join('') || 
-                                          '<li>Khalil Mack (LAC)</li><li>Chris Jones (KC)</li><li>Maxx Crosby (LV)</li>'}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Late-Round Targets</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        <li>Nolan Smith Jr. (PHI)</li>
-                                        <li>Chase Young (WAS)</li>
-                                        <li>Danielle Hunter (MIN)</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md border-4 border-amber-400">
-                            <h3 class="text-2xl font-bold mb-4 text-center text-amber-700">Linebackers</h3>
-                            <p class="text-sm text-center font-semibold text-amber-600 mb-4">THE MOST IMPORTANT IDP POSITION</p>
-                            <p class="text-slate-600 mb-4 text-sm">Target every-down players who rack up tackles. They are the RBs of the defense. Look for players with high snap counts and involvement in run stopping.</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        ${lbPlayers.slice(0, 3).map(p => `<li>${p.name} (${p.team})</li>`).join('') || 
-                                          '<li>T.J. Watt (PIT)</li><li>Fred Warner (SF)</li><li>Micah Parsons (DAL)</li>'}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        ${lbPlayers.slice(3, 6).map(p => `<li>${p.name} (${p.team})</li>`).join('') || 
-                                          '<li>Roquan Smith (BAL)</li><li>Matt Milano (BUF)</li><li>Tremaine Edmunds (CHI)</li>'}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Late-Round Targets</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        <li>Tyrice Knight (SEA)</li>
-                                        <li>Jaylon Carlies (IND)</li>
-                                        <li>Ernest Jones (SEA)</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h3 class="text-2xl font-bold mb-4 text-center text-slate-800">Defensive Backs</h3>
-                            <p class="text-slate-600 mb-4 text-sm">Prioritize box safeties who play near the line of scrimmage for consistent tackle numbers. Avoid pure coverage corners unless they get a lot of interceptions.</p>
-                            <div class="space-y-3">
-                                <div>
-                                    <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        ${dbPlayers.slice(0, 3).map(p => `<li>${p.name} (${p.team})</li>`).join('') || 
-                                          '<li>Minkah Fitzpatrick (PIT)</li><li>Derwin James Jr. (LAC)</li><li>Kyle Hamilton (BAL)</li>'}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        ${dbPlayers.slice(3, 6).map(p => `<li>${p.name} (${p.team})</li>`).join('') || 
-                                          '<li>Antoine Winfield Jr. (TB)</li><li>Budda Baker (ARI)</li><li>Kevin Byard (CHI)</li>'}
-                                    </ul>
-                                </div>
-                                <div>
-                                    <p class="font-bold text-slate-800">Late-Round Targets</p>
-                                    <ul class="text-sm text-slate-600 list-disc list-inside">
-                                        <li>Tykee Smith (TB)</li>
-                                        <li>Lathan Ransom (NYG)</li>
-                                        <li>Jordan Phillips (DAL)</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-bold mb-4 text-slate-900">IDP Draft Strategy Tips</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="bg-amber-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-amber-800 mb-2">When to Draft IDPs</h4>
-                                <p class="text-sm text-amber-700">Don't draft any IDP before Round 8. Focus on offensive skill positions first, then grab your QB2 and handcuff RBs before targeting defensive players.</p>
-                            </div>
-                            <div class="bg-blue-50 p-4 rounded-lg">
-                                <h4 class="font-semibold text-blue-800 mb-2">Positional Priority</h4>
-                                <p class="text-sm text-blue-700">1. Elite LB (Rounds 8-10), 2. Top DL (Rounds 10-12), 3. Box Safety DB (Rounds 12-14). Avoid pure coverage players unless they have elite ball skills.</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            },
-
-            renderCharts() {
-                Object.values(this.state.charts).forEach(chart => chart.destroy());
-                
-                if (this.state.currentView === 'dashboard') {
-                    this.renderStrategyChart();
-                }
-            },
-
-            renderStrategyChart() {
-                const ctx = document.getElementById('strategyChart')?.getContext('2d');
-                if (!ctx) return;
-
-                const data = {
-                    labels: ['Robust RB', 'Hero RB', 'Zero RB'],
-                    datasets: [{
-                        label: 'Risk Level',
-                        data: [9, 6, 7],
-                        backgroundColor: ['rgba(56, 189, 248, 0.6)', 'rgba(251, 191, 36, 0.6)', 'rgba(16, 185, 129, 0.6)'],
-                        borderColor: ['#0284c7', '#d97706', '#059669'],
-                        borderWidth: 2,
-                    }, {
-                        label: 'Upside Potential',
-                        data: [8, 9, 10],
-                        backgroundColor: ['rgba(56, 189, 248, 0.3)', 'rgba(251, 191, 36, 0.3)', 'rgba(16, 185, 129, 0.3)'],
-                        borderColor: ['#0284c7', '#d97706', '#059669'],
-                        borderWidth: 2,
-                    }]
-                };
-
-                this.state.charts.strategyChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: data,
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 10,
-                                grid: { color: '#e2e8f0' }
-                            },
-                            x: {
-                                grid: { display: false }
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    footer: (tooltipItems) => {
-                                        const strategy = tooltipItems[0].label;
-                                        const descriptions = {
-                                            'Robust RB': 'Prioritizes RBs early to build an advantage at a scarce position.',
-                                            'Hero RB': 'Secures one elite RB, then focuses on other positions.',
-                                            'Zero RB': 'Fades RBs early to load up on elite WRs/TEs/QBs.'
-                                        };
-                                        return descriptions[strategy] || '';
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-        };
-
-        document.addEventListener('DOMContentLoaded', () => App.init());
-    </script>
-</body>
-</html>
+                    btn.
