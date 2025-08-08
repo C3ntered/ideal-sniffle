@@ -99,7 +99,6 @@
         <header class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-bold text-slate-900">2025 Fantasy Football AI Dashboard</h1>
             <p class="text-slate-600 mt-2 text-lg">Your interactive guide to dominating your Superflex & IDP league.</p>
-            <p2 class="text-slate-600 mt-2 textlg">Built by yours truly: Kai Holland</p2>
         </header>
 
         <nav class="flex justify-center mb-8 bg-slate-200 rounded-lg p-2 shadow-inner">
@@ -110,7 +109,10 @@
         </nav>
 
         <main id="main-content">
-            <!-- Views will be injected here by JavaScript -->
+            <div class="flex justify-center items-center h-64">
+                <div class="spinner"></div>
+                <p class="ml-4 text-slate-600">Fetching latest player data from ESPN...</p>
+            </div>
         </main>
     </div>
 
@@ -137,266 +139,51 @@
                 charts: {}
             },
             
-            init() {
-                this.fetchData();
+            async init() {
+                await this.fetchData();
                 this.render();
                 this.addEventListeners();
             },
 
-            fetchData() {
-                this.state.players = [
-                    {ovr: 1, name: "Ja'Marr Chase", pos: "WR", team: "CIN", tier: 1, pprRk: 1, halfRk: 1, stdRk: 1},
-                    {ovr: 2, name: "Bijan Robinson", pos: "RB", team: "ATL", tier: 1, pprRk: 2, halfRk: 2, stdRk: 3},
-                    {ovr: 3, name: "Saquon Barkley", pos: "RB", team: "PHI", tier: 1, pprRk: 7, halfRk: 5, stdRk: 2},
-                    {ovr: 4, name: "Jahmyr Gibbs", pos: "RB", team: "DET", tier: 1, pprRk: 4, halfRk: 3, stdRk: 5},
-                    {ovr: 5, name: "CeeDee Lamb", pos: "WR", team: "DAL", tier: 1, pprRk: 3, halfRk: 6, stdRk: 6},
-                    {ovr: 6, name: "Justin Jefferson", pos: "WR", team: "MIN", tier: 1, pprRk: 6, halfRk: 4, stdRk: 4},
-                    {ovr: 7, name: "Puka Nacua", pos: "WR", team: "LAR", tier: 1, pprRk: 10, halfRk: 7, stdRk: 9},
-                    {ovr: 8, name: "Malik Nabers", pos: "WR", team: "NYG", tier: 1, pprRk: 9, halfRk: 8, stdRk: 10},
-                    {ovr: 9, name: "Christian McCaffrey", pos: "RB", team: "SF", tier: 2, pprRk: 8, halfRk: 11, stdRk: 14},
-                    {ovr: 10, name: "Amon-Ra St. Brown", pos: "WR", team: "DET", tier: 2, pprRk: 13, halfRk: 9, stdRk: 13},
-                    {ovr: 11, name: "Nico Collins", pos: "WR", team: "HOU", tier: 2, pprRk: 11, halfRk: 10, stdRk: 8},
-                    {ovr: 12, name: "De'Von Achane", pos: "RB", team: "MIA", tier: 2, pprRk: 5, halfRk: 15, stdRk: 17},
-                    {ovr: 13, name: "Derrick Henry", pos: "RB", team: "BAL", tier: 2, pprRk: 16, halfRk: 14, stdRk: 7},
-                    {ovr: 14, name: "Brian Thomas Jr.", pos: "WR", team: "JAX", tier: 2, pprRk: 14, halfRk: 13, stdRk: 11},
-                    {ovr: 15, name: "Ashton Jeanty", pos: "RB", team: "LV", tier: 2, pprRk: 12, halfRk: 12, stdRk: 12},
-                    {ovr: 16, name: "Drake London", pos: "WR", team: "ATL", tier: 2, pprRk: 15, halfRk: 16, stdRk: 15},
-                    {ovr: 17, name: "A.J. Brown", pos: "WR", team: "PHI", tier: 2, pprRk: 17, halfRk: 17, stdRk: 16},
-                    {ovr: 18, name: "Jonathan Taylor", pos: "RB", team: "IND", tier: 3, pprRk: 18, halfRk: 18, stdRk: 18},
-                    {ovr: 19, name: "Josh Jacobs", pos: "RB", team: "GB", tier: 3, pprRk: 19, halfRk: 19, stdRk: 19},
-                    {ovr: 20, name: "Bucky Irving", pos: "RB", team: "TB", tier: 3, pprRk: 20, halfRk: 20, stdRk: 20},
-                    {ovr: 21, name: "Ladd McConkey", pos: "WR", team: "LAC", tier: 3, pprRk: 21, halfRk: 21, stdRk: 21},
-                    {ovr: 22, name: "Tyreek Hill", pos: "WR", team: "MIA", tier: 3, pprRk: 22, halfRk: 22, stdRk: 22},
-                    {ovr: 23, name: "Jaxon Smith-Njigba", pos: "WR", team: "SEA", tier: 3, pprRk: 23, halfRk: 23, stdRk: 23},
-                    {ovr: 24, name: "Tee Higgins", pos: "WR", team: "CIN", tier: 3, pprRk: 24, halfRk: 24, stdRk: 24},
-                    {ovr: 25, name: "Davante Adams", pos: "WR", team: "NYJ", tier: 3, pprRk: 25, halfRk: 25, stdRk: 26},
-                    {ovr: 26, name: "Breece Hall", pos: "RB", team: "NYJ", tier: 3, pprRk: 26, halfRk: 27, stdRk: 30},
-                    {ovr: 27, name: "Josh Allen", pos: "QB", team: "BUF", tier: 1, pprRk: 29, halfRk: 26, stdRk: 25},
-                    {ovr: 28, name: "Lamar Jackson", pos: "QB", team: "BAL", tier: 1, pprRk: 30, halfRk: 28, stdRk: 27},
-                    {ovr: 29, name: "Jalen Hurts", pos: "QB", team: "PHI", tier: 1, pprRk: 31, halfRk: 29, stdRk: 28},
-                    {ovr: 30, name: "Jayden Daniels", pos: "QB", team: "WAS", tier: 1, pprRk: 32, halfRk: 30, stdRk: 29},
-                    {ovr: 31, name: "Chase Brown", pos: "RB", team: "CIN", tier: 3, pprRk: 28, halfRk: 31, stdRk: 32},
-                    {ovr: 32, name: "Kyren Williams", pos: "RB", team: "LAR", tier: 3, adp: 38.5, ecr: 26, pprRk: 27, halfRk: 32, stdRk: 34},
-                    {ovr: 33, name: "Garrett Wilson", pos: "WR", team: "NYJ", tier: 4, pprRk: 33, halfRk: 33, stdRk: 33},
-                    {ovr: 34, name: "Mike Evans", pos: "WR", team: "TB", tier: 4, adp: 42.0, ecr: 37, pprRk: 34, halfRk: 34, stdRk: 31},
-                    {ovr: 35, name: "Joe Burrow", pos: "QB", team: "CIN", tier: 2, pprRk: 35, halfRk: 35, stdRk: 35},
-                    {ovr: 36, name: "Patrick Mahomes", pos: "QB", team: "KC", tier: 2, pprRk: 36, halfRk: 36, stdRk: 36},
-                    {ovr: 37, name: "Bo Nix", pos: "QB", team: "DEN", tier: 2, pprRk: 37, halfRk: 37, stdRk: 37},
-                    {ovr: 38, name: "Kenneth Walker III", pos: "RB", team: "SEA", tier: 4, pprRk: 38, halfRk: 38, stdRk: 38},
-                    {ovr: 39, name: "James Cook", pos: "RB", team: "BUF", tier: 4, adp: 43.6, ecr: 36, pprRk: 39, halfRk: 39, stdRk: 39},
-                    {ovr: 40, name: "Alvin Kamara", pos: "RB", team: "NO", tier: 4, pprRk: 40, halfRk: 40, stdRk: 40},
-                    {ovr: 41, name: "James Conner", pos: "RB", team: "ARI", tier: 4, pprRk: 41, halfRk: 41, stdRk: 41},
-                    {ovr: 42, name: "Joe Mixon", pos: "RB", team: "HOU", tier: 4, pprRk: 42, halfRk: 42, stdRk: 42},
-                    {ovr: 43, name: "Omarion Hampton", pos: "RB", team: "CAR", tier: 4, pprRk: 43, halfRk: 43, stdRk: 43},
-                    {ovr: 44, name: "Terry McLaurin", pos: "WR", team: "WAS", tier: 4, pprRk: 44, halfRk: 44, stdRk: 44},
-                    {ovr: 45, name: "Marvin Harrison Jr.", pos: "WR", team: "ARI", tier: 4, pprRk: 45, halfRk: 45, stdRk: 45},
-                    {ovr: 46, name: "DJ Moore", pos: "WR", team: "CHI", tier: 4, pprRk: 46, halfRk: 46, stdRk: 46},
-                    {ovr: 47, name: "Xavier Worthy", pos: "WR", team: "KC", tier: 4, pprRk: 47, halfRk: 47, stdRk: 47},
-                    {ovr: 48, name: "Caleb Williams", pos: "QB", team: "CHI", tier: 3, adp: 105.0, ecr: 95, pprRk: 48, halfRk: 48, stdRk: 48},
-                    {ovr: 49, name: "Drake Maye", pos: "QB", team: "NE", tier: 3, pprRk: 49, halfRk: 49, stdRk: 49},
-                    {ovr: 50, name: "Brock Bowers", pos: "TE", team: "LV", tier: 1, pprRk: 50, halfRk: 50, stdRk: 52},
-                    {ovr: 51, name: "Brock Purdy", pos: "QB", team: "SF", tier: 3, pprRk: 51, halfRk: 51, stdRk: 51},
-                    {ovr: 52, name: "Trey McBride", pos: "TE", team: "ARI", tier: 1, pprRk: 52, halfRk: 51, stdRk: 55},
-                    {ovr: 53, name: "Kyler Murray", pos: "QB", team: "ARI", tier: 3, pprRk: 53, halfRk: 53, stdRk: 53},
-                    {ovr: 54, name: "Dak Prescott", pos: "QB", team: "DAL", tier: 4, pprRk: 54, halfRk: 54, stdRk: 54},
-                    {ovr: 55, name: "Justin Fields", pos: "QB", team: "PIT", tier: 4, pprRk: 55, halfRk: 55, stdRk: 50},
-                    {ovr: 56, name: "Jared Goff", pos: "QB", team: "DET", tier: 4, pprRk: 56, halfRk: 56, stdRk: 56},
-                    {ovr: 57, name: "Jordan Love", pos: "QB", team: "GB", tier: 4, pprRk: 57, halfRk: 57, stdRk: 57},
-                    {ovr: 58, name: "DK Metcalf", pos: "WR", team: "SEA", tier: 5, pprRk: 58, halfRk: 58, stdRk: 58},
-                    {ovr: 59, name: "DeVonta Smith", pos: "WR", team: "PHI", tier: 5, pprRk: 59, halfRk: 59, stdRk: 59},
-                    {ovr: 60, name: "George Kittle", pos: "TE", team: "SF", tier: 2, pprRk: 60, halfRk: 60, stdRk: 60},
-                    {ovr: 61, name: "Sam LaPorta", pos: "TE", team: "DET", tier: 2, pprRk: 61, halfRk: 61, stdRk: 61},
-                    {ovr: 62, name: "T.J. Hockenson", pos: "TE", team: "MIN", tier: 2, pprRk: 62, halfRk: 62, stdRk: 62},
-                    {ovr: 63, name: "Travis Kelce", pos: "TE", team: "KC", tier: 3, pprRk: 63, halfRk: 63, stdRk: 63},
-                    {ovr: 64, name: "Mark Andrews", pos: "TE", team: "BAL", tier: 3, pprRk: 64, halfRk: 64, stdRk: 64},
-                    {ovr: 65, name: "David Njoku", pos: "TE", team: "CLE", tier: 3, adp: 80.5, ecr: 63, pprRk: 65, halfRk: 65, stdRk: 65},
-                    {ovr: 66, name: "Evan Engram", pos: "TE", team: "JAX", tier: 3, pprRk: 66, halfRk: 66, stdRk: 66},
-                    {ovr: 67, name: "Courtland Sutton", pos: "WR", team: "DEN", tier: 5, pprRk: 67, halfRk: 67, stdRk: 67},
-                    {ovr: 68, name: "Zay Flowers", pos: "WR", team: "BAL", tier: 5, pprRk: 68, halfRk: 68, stdRk: 68},
-                    {ovr: 69, name: "George Pickens", pos: "WR", team: "PIT", tier: 5, adp: 66.0, ecr: 45, pprRk: 69, halfRk: 69, stdRk: 69},
-                    {ovr: 70, name: "Jaylen Waddle", pos: "WR", team: "MIA", tier: 5, pprRk: 70, halfRk: 70, stdRk: 70},
-                    {ovr: 71, name: "Trevor Lawrence", pos: "QB", team: "JAX", tier: 5, pprRk: 71, halfRk: 71, stdRk: 71},
-                    {ovr: 72, name: "C.J. Stroud", pos: "QB", team: "HOU", tier: 5, pprRk: 72, halfRk: 72, stdRk: 72},
-                    {ovr: 73, name: "Bryce Young", pos: "QB", team: "CAR", tier: 5, pprRk: 73, halfRk: 73, stdRk: 73},
-                    {ovr: 74, name: "Baker Mayfield", pos: "QB", team: "TB", tier: 5, pprRk: 74, halfRk: 74, stdRk: 74},
-                    {ovr: 75, name: "D'Andre Swift", pos: "RB", team: "CHI", tier: 5, pprRk: 75, halfRk: 75, stdRk: 75},
-                    {ovr: 76, name: "Chuba Hubbard", pos: "RB", team: "CAR", tier: 5, pprRk: 76, halfRk: 76, stdRk: 76},
-                    {ovr: 77, name: "David Montgomery", pos: "RB", team: "DET", tier: 5, pprRk: 77, halfRk: 77, stdRk: 77},
-                    {ovr: 78, name: "Isiah Pacheco", pos: "RB", team: "KC", tier: 5, pprRk: 78, halfRk: 78, stdRk: 78},
-                    {ovr: 79, name: "TreVeyon Henderson", pos: "RB", team: "CLE", tier: 5, pprRk: 79, halfRk: 79, stdRk: 79},
-                    {ovr: 80, name: "T.J. Watt", pos: "DL", team: "PIT", tier: 1, pprRk: 80, halfRk: 80, stdRk: 80},
-                    {ovr: 81, name: "Tucker Kraft", pos: "TE", team: "GB", tier: 4, pprRk: 81, halfRk: 81, stdRk: 81},
-                    {ovr: 82, name: "Maxx Crosby", pos: "DL", team: "LV", tier: 1, pprRk: 82, halfRk: 82, stdRk: 82},
-                    {ovr: 83, name: "Dalton Kincaid", pos: "TE", team: "BUF", tier: 4, pprRk: 83, halfRk: 83, stdRk: 83},
-                    {ovr: 84, name: "Jake Ferguson", pos: "TE", team: "DAL", tier: 4, pprRk: 84, halfRk: 84, stdRk: 84},
-                    {ovr: 85, name: "Myles Garrett", pos: "DL", team: "CLE", tier: 1, pprRk: 85, halfRk: 85, stdRk: 85},
-                    {ovr: 86, name: "Dallas Goedert", pos: "TE", team: "PHI", tier: 4, pprRk: 86, halfRk: 86, stdRk: 86},
-                    {ovr: 87, name: "Colston Loveland", pos: "TE", team: "LAC", tier: 4, pprRk: 87, halfRk: 87, stdRk: 87},
-                    {ovr: 88, name: "Zaire Franklin", pos: "LB", team: "IND", tier: 1, pprRk: 88, halfRk: 88, stdRk: 88},
-                    {ovr: 89, name: "Kyle Pitts", pos: "TE", team: "ATL", tier: 5, pprRk: 89, halfRk: 89, stdRk: 89},
-                    {ovr: 90, name: "Roquan Smith", pos: "LB", team: "BAL", tier: 1, pprRk: 90, halfRk: 90, stdRk: 90},
-                    {ovr: 91, name: "Brenton Strange", pos: "TE", team: "JAX", tier: 5, pprRk: 91, halfRk: 91, stdRk: 91},
-                    {ovr: 92, name: "Fred Warner", pos: "LB", team: "SF", tier: 1, pprRk: 92, halfRk: 92, stdRk: 92},
-                    {ovr: 93, name: "Jonnu Smith", pos: "TE", team: "MIA", tier: 5, pprRk: 93, halfRk: 93, stdRk: 93},
-                    {ovr: 94, name: "Isaiah Likely", pos: "TE", team: "BAL", tier: 5, pprRk: 94, halfRk: 94, stdRk: 94},
-                    {ovr: 95, name: "Brian Branch", pos: "DB", team: "DET", tier: 1, pprRk: 95, halfRk: 95, stdRk: 95},
-                    {ovr: 96, name: "Aidan Hutchinson", pos: "DL", team: "DET", tier: 1, pprRk: 96, halfRk: 96, stdRk: 96},
-                    {ovr: 97, name: "Micah Parsons", pos: "DL", team: "DAL", tier: 2, pprRk: 97, halfRk: 97, stdRk: 97},
-                    {ovr: 98, name: "Kyle Hamilton", pos: "DB", team: "BAL", tier: 1, pprRk: 98, halfRk: 98, stdRk: 98},
-                    {ovr: 99, name: "Nick Bosa", pos: "DL", team: "SF", tier: 2, pprRk: 99, halfRk: 99, stdRk: 99},
-                    {ovr: 100, name: "Budda Baker", pos: "DB", team: "ARI", tier: 1, pprRk: 100, halfRk: 100, stdRk: 100},
-                    {ovr: 101, name: "Will Anderson Jr.", pos: "DL", team: "HOU", tier: 2, pprRk: 101, halfRk: 101, stdRk: 101},
-                    {ovr: 102, name: "T.J. Edwards", pos: "LB", team: "CHI", tier: 2, pprRk: 102, halfRk: 102, stdRk: 102},
-                    {ovr: 103, name: "Zack Baun", pos: "LB", team: "PHI", tier: 2, pprRk: 103, halfRk: 103, stdRk: 103},
-                    {ovr: 104, name: "Foye Oluokun", pos: "LB", team: "JAX", tier: 2, pprRk: 104, halfRk: 104, stdRk: 104},
-                    {ovr: 105, name: "Antoine Winfield Jr.", pos: "DB", team: "TB", tier: 2, pprRk: 105, halfRk: 105, stdRk: 105},
-                    {ovr: 106, name: "Derwin James Jr.", pos: "DB", team: "LAC", tier: 2, pprRk: 106, halfRk: 106, stdRk: 106},
-                    {ovr: 107, name: "Jessie Bates III", pos: "DB", team: "ATL", tier: 2, pprRk: 107, halfRk: 107, stdRk: 107},
-                    {ovr: 108, name: "Danielle Hunter", pos: "DL", team: "HOU", tier: 3, pprRk: 108, halfRk: 108, stdRk: 108},
-                    {ovr: 109, name: "Brian Burns", pos: "DL", team: "NYG", tier: 3, pprRk: 109, halfRk: 109, stdRk: 109},
-                    {ovr: 110, name: "Jared Verse", pos: "DL", team: "LAR", tier: 3, pprRk: 110, halfRk: 110, stdRk: 110},
-                    {ovr: 111, name: "Jonathan Greenard", pos: "DL", team: "MIN", tier: 3, pprRk: 111, halfRk: 111, stdRk: 111},
-                    {ovr: 112, name: "Ernest Jones", pos: "LB", team: "LAR", tier: 3, pprRk: 112, halfRk: 112, stdRk: 112},
-                    {ovr: 113, name: "Terrel Bernard", pos: "LB", team: "BUF", tier: 3, pprRk: 113, halfRk: 113, stdRk: 113},
-                    {ovr: 114, name: "Jamien Sherwood", pos: "LB", team: "NYJ", tier: 3, pprRk: 114, halfRk: 114, stdRk: 114},
-                    {ovr: 115, name: "Alex Singleton", pos: "LB", team: "DEN", tier: 3, pprRk: 115, halfRk: 115, stdRk: 115},
-                    {ovr: 116, name: "Nick Cross", pos: "DB", team: "IND", tier: 3, pprRk: 116, halfRk: 116, stdRk: 116},
-                    {ovr: 117, name: "Jalen Thompson", pos: "DB", team: "ARI", tier: 3, pprRk: 117, halfRk: 117, stdRk: 117},
-                    {ovr: 118, name: "Jordan Battle", pos: "DB", team: "CIN", tier: 3, pprRk: 118, halfRk: 118, stdRk: 118},
-                    {ovr: 119, name: "Trey Hendrickson", pos: "DL", team: "CIN", tier: 4, pprRk: 119, halfRk: 119, stdRk: 119},
-                    {ovr: 120, name: "DeForest Buckner", pos: "DL", team: "IND", tier: 4, pprRk: 120, halfRk: 120, stdRk: 120},
-                    {ovr: 121, name: "Travon Walker", pos: "DL", team: "JAX", tier: 4, pprRk: 121, halfRk: 121, stdRk: 121},
-                    {ovr: 122, name: "Bobby Wagner", pos: "LB", team: "WAS", tier: 4, pprRk: 122, halfRk: 122, stdRk: 122},
-                    {ovr: 123, name: "Logan Wilson", pos: "LB", team: "CIN", tier: 4, pprRk: 123, halfRk: 123, stdRk: 123},
-                    {ovr: 124, name: "Jordyn Brooks", pos: "LB", team: "MIA", tier: 4, pprRk: 124, halfRk: 124, stdRk: 124},
-                    {ovr: 125, name: "Kaden Elliss", pos: "LB", team: "ATL", tier: 4, pprRk: 125, halfRk: 125, stdRk: 125},
-                    {ovr: 126, name: "Jaden Hicks", pos: "DB", team: "KC", tier: 4, pprRk: 126, halfRk: 126, stdRk: 126},
-                    {ovr: 127, name: "Tykee Smith", pos: "DB", team: "TB", tier: 4, pprRk: 127, halfRk: 127, stdRk: 127},
-                    {ovr: 128, name: "Jordan Fuller", pos: "DB", team: "CAR", tier: 4, pprRk: 128, halfRk: 128, stdRk: 128},
-                    {ovr: 129, name: "Antonio Gibson", pos: "RB", team: "NE", tier: 6, pprRk: 129, halfRk: 129, stdRk: 129},
-                    {ovr: 130, name: "Zamir White", pos: "RB", team: "LV", tier: 6, pprRk: 130, halfRk: 130, stdRk: 130},
-                    {ovr: 131, name: "Jaylen Wright", pos: "RB", team: "MIA", tier: 6, pprRk: 131, halfRk: 131, stdRk: 131},
-                    {ovr: 132, name: "Roschon Johnson", pos: "RB", team: "CHI", tier: 6, pprRk: 132, halfRk: 132, stdRk: 132},
-                    {ovr: 133, name: "Tank Bigsby", pos: "RB", team: "JAX", tier: 6, pprRk: 133, halfRk: 133, stdRk: 133},
-                    {ovr: 134, name: "Rashid Shaheed", pos: "WR", team: "NO", tier: 6, pprRk: 134, halfRk: 134, stdRk: 134},
-                    {ovr: 135, name: "Quentin Johnston", pos: "WR", team: "LAC", tier: 6, pprRk: 135, halfRk: 135, stdRk: 135},
-                    {ovr: 136, name: "Jalin Hyatt", pos: "WR", team: "NYG", tier: 6, pprRk: 136, halfRk: 136, stdRk: 136},
-                    {ovr: 137, name: "Jonathan Brooks", pos: "RB", team: "CAR", tier: 6, pprRk: 137, halfRk: 137, stdRk: 137},
-                    {ovr: 138, name: "Khalil Shakir", pos: "WR", team: "BUF", tier: 6, pprRk: 138, halfRk: 138, stdRk: 138},
-                    {ovr: 139, name: "Luke Musgrave", pos: "TE", team: "GB", tier: 6, pprRk: 139, halfRk: 139, stdRk: 139},
-                    {ovr: 140, name: "Pat Freiermuth", pos: "TE", team: "PIT", tier: 6, pprRk: 140, halfRk: 140, stdRk: 140},
-                    {ovr: 141, name: "Greg Dulcich", pos: "TE", team: "DEN", tier: 6, pprRk: 141, halfRk: 141, stdRk: 141},
-                    {ovr: 142, name: "Juwan Johnson", pos: "TE", team: "NO", tier: 6, pprRk: 142, halfRk: 142, stdRk: 142},
-                    {ovr: 143, name: "Chigoziem Okonkwo", pos: "TE", team: "TEN", tier: 6, pprRk: 143, halfRk: 143, stdRk: 143},
-                    {ovr: 144, name: "Nik Bonitto", pos: "DL", team: "DEN", tier: 5, pprRk: 144, halfRk: 144, stdRk: 144},
-                    {ovr: 145, name: "Grover Stewart", pos: "DL", team: "IND", tier: 5, pprRk: 145, halfRk: 145, stdRk: 145},
-                    {ovr: 146, name: "Jack Campbell", pos: "LB", team: "DET", tier: 5, pprRk: 146, halfRk: 146, stdRk: 146},
-                    {ovr: 147, name: "Ivan Pace Jr.", pos: "LB", team: "MIN", tier: 5, pprRk: 147, halfRk: 147, stdRk: 147},
-                    {ovr: 148, name: "Quincy Williams", pos: "LB", team: "NYJ", tier: 5, pprRk: 148, halfRk: 148, stdRk: 148},
-                    {ovr: 149, name: "Camryn Bynum", pos: "DB", team: "MIN", tier: 5, pprRk: 149, halfRk: 149, stdRk: 149},
-                    {ovr: 150, name: "Julian Love", pos: "DB", team: "SEA", tier: 5, pprRk: 150, halfRk: 150, stdRk: 150},
-                    {ovr: 151, name: "Will Levis", pos: "QB", team: "TEN", tier: 6, pprRk: 151, halfRk: 151, stdRk: 151},
-                    {ovr: 152, name: "Gus Edwards", pos: "RB", team: "LAC", tier: 7, pprRk: 152, halfRk: 152, stdRk: 152},
-                    {ovr: 153, name: "Rico Dowdle", pos: "RB", team: "DAL", tier: 7, pprRk: 153, halfRk: 153, stdRk: 153},
-                    {ovr: 154, name: "Demario Douglas", pos: "WR", team: "NE", tier: 7, pprRk: 154, halfRk: 154, stdRk: 154},
-                    {ovr: 155, name: "Rashod Bateman", pos: "WR", team: "BAL", tier: 7, pprRk: 155, halfRk: 155, stdRk: 155},
-                    {ovr: 156, name: "Tyler Lockett", pos: "WR", team: "SEA", tier: 7, pprRk: 156, halfRk: 156, stdRk: 156},
-                    {ovr: 157, name: "Cade Otton", pos: "TE", team: "TB", tier: 7, pprRk: 157, halfRk: 157, stdRk: 157},
-                    {ovr: 158, name: "Taysom Hill", pos: "TE", team: "NO", tier: 7, pprRk: 158, halfRk: 158, stdRk: 158},
-                    {ovr: 159, name: "Kwity Paye", pos: "DL", team: "IND", tier: 6, pprRk: 159, halfRk: 159, stdRk: 159},
-                    {ovr: 160, name: "Christian Barmore", pos: "DL", team: "NE", tier: 6, pprRk: 160, halfRk: 160, stdRk: 160},
-                    {ovr: 161, name: "Pete Werner", pos: "LB", team: "NO", tier: 6, pprRk: 161, halfRk: 161, stdRk: 161},
-                    {ovr: 162, name: "Drue Tranquill", pos: "LB", team: "KC", tier: 6, pprRk: 162, halfRk: 162, stdRk: 162},
-                    {ovr: 163, name: "Kerby Joseph", pos: "DB", team: "DET", tier: 6, pprRk: 163, halfRk: 163, stdRk: 163},
-                    {ovr: 164, name: "Jevon Holland", pos: "DB", team: "MIA", tier: 6, pprRk: 164, halfRk: 164, stdRk: 164},
-                    {ovr: 165, name: "Sam Howell", pos: "QB", team: "SEA", tier: 7, pprRk: 165, halfRk: 165, stdRk: 165},
-                    {ovr: 166, name: "Elijah Mitchell", pos: "RB", team: "SF", tier: 8, pprRk: 166, halfRk: 166, stdRk: 166},
-                    {ovr: 167, name: "Kendre Miller", pos: "RB", team: "NO", tier: 8, pprRk: 167, halfRk: 167, stdRk: 167},
-                    {ovr: 168, name: "Jahan Dotson", pos: "WR", team: "WAS", tier: 8, pprRk: 168, halfRk: 168, stdRk: 168},
-                    {ovr: 169, name: "Elijah Moore", pos: "WR", team: "CLE", tier: 8, pprRk: 169, halfRk: 169, stdRk: 169},
-                    {ovr: 170, name: "Michael Mayer", pos: "TE", team: "LV", tier: 8, pprRk: 170, halfRk: 170, stdRk: 170},
-                    {ovr: 171, name: "Jaelan Phillips", pos: "DL", team: "MIA", tier: 7, pprRk: 171, halfRk: 171, stdRk: 171},
-                    {ovr: 172, name: "Kayvon Thibodeaux", pos: "DL", team: "NYG", tier: 7, pprRk: 172, halfRk: 172, stdRk: 172},
-                    {ovr: 173, name: "Devin Lloyd", pos: "LB", team: "JAX", tier: 7, pprRk: 173, halfRk: 173, stdRk: 173},
-                    {ovr: 174, name: "Ja'Whaun Bentley", pos: "LB", team: "NE", tier: 7, pprRk: 174, halfRk: 174, stdRk: 174},
-                    {ovr: 175, name: "Xavier McKinney", pos: "DB", team: "GB", tier: 7, pprRk: 175, halfRk: 175, stdRk: 175},
-                    {ovr: 176, name: "Gardner Minshew", pos: "QB", team: "LV", tier: 8, pprRk: 176, halfRk: 176, stdRk: 176},
-                    {ovr: 177, name: "Tyjae Spears", pos: "RB", team: "TEN", tier: 9, pprRk: 177, halfRk: 177, stdRk: 177},
-                    {ovr: 178, name: "Rachaad White", pos: "RB", team: "TB", tier: 9, pprRk: 178, halfRk: 178, stdRk: 178},
-                    {ovr: 179, name: "Zay Jones", pos: "WR", team: "ARI", tier: 9, pprRk: 179, halfRk: 179, stdRk: 179},
-                    {ovr: 180, name: "Wan'Dale Robinson", pos: "WR", team: "NYG", tier: 9, pprRk: 180, halfRk: 180, stdRk: 180},
-                    {ovr: 181, name: "Isaiah Likely", pos: "TE", team: "BAL", tier: 9, pprRk: 181, halfRk: 181, stdRk: 181},
-                    {ovr: 182, name: "George Karlaftis", pos: "DL", team: "KC", tier: 8, pprRk: 182, halfRk: 182, stdRk: 182},
-                    {ovr: 183, name: "Christian Harris", pos: "LB", team: "HOU", tier: 8, pprRk: 183, halfRk: 183, stdRk: 183},
-                    {ovr: 184, name: "Richie Grant", pos: "DB", team: "ATL", tier: 8, pprRk: 184, halfRk: 184, stdRk: 184},
-                    {ovr: 185, name: "Desmond Ridder", pos: "QB", team: "ARI", tier: 9, pprRk: 185, halfRk: 185, stdRk: 185},
-                    {ovr: 186, name: "Dameon Pierce", pos: "RB", team: "HOU", tier: 10, pprRk: 186, halfRk: 186, stdRk: 186},
-                    {ovr: 187, name: "Tank Dell", pos: "WR", team: "HOU", tier: 10, pprRk: 187, halfRk: 187, stdRk: 187},
-                    {ovr: 188, name: "Trey Palmer", pos: "WR", team: "TB", tier: 10, pprRk: 188, halfRk: 188, stdRk: 188},
-                    {ovr: 189, name: "Darren Waller", pos: "TE", team: "NYG", tier: 10, pprRk: 189, halfRk: 189, stdRk: 189},
-                    {ovr: 190, name: "Baron Browning", pos: "DL", team: "DEN", tier: 9, pprRk: 190, halfRk: 190, stdRk: 190},
-                    {ovr: 191, name: "Nakobe Dean", pos: "LB", team: "PHI", tier: 9, pprRk: 191, halfRk: 191, stdRk: 191},
-                    {ovr: 192, name: "Talanoa Hufanga", pos: "DB", team: "SF", tier: 9, pprRk: 192, halfRk: 192, stdRk: 192},
-                    {ovr: 193, name: "Aidan O'Connell", pos: "QB", team: "LV", tier: 10, pprRk: 193, halfRk: 193, stdRk: 193},
-                    {ovr: 194, name: "Devin Singletary", pos: "RB", team: "NYG", tier: 11, pprRk: 194, halfRk: 194, stdRk: 194},
-                    {ovr: 195, name: "Marvin Mims Jr.", pos: "WR", team: "DEN", tier: 11, pprRk: 195, halfRk: 195, stdRk: 195},
-                    {ovr: 196, name: "Hunter Henry", pos: "TE", team: "NE", tier: 11, pprRk: 196, halfRk: 196, stdRk: 196},
-                    {ovr: 197, name: "Yaya Diaby", pos: "DL", team: "TB", tier: 10, pprRk: 197, halfRk: 197, stdRk: 197},
-                    {ovr: 198, name: "Divine Deablo", pos: "LB", team: "LV", tier: 10, pprRk: 198, halfRk: 198, stdRk: 198},
-                    {ovr: 199, name: "Reed Blankenship", pos: "DB", team: "PHI", tier: 10, pprRk: 199, halfRk: 199, stdRk: 199},
-                    {ovr: 200, name: "Derek Carr", pos: "QB", team: "NO", tier: 11, pprRk: 200, halfRk: 200, stdRk: 200},
-                    {ovr: 201, name: "Zach Charbonnet", pos: "RB", team: "SEA", tier: 12, pprRk: 201, halfRk: 201, stdRk: 201},
-                    {ovr: 202, name: "Donovan Peoples-Jones", pos: "WR", team: "CLE", tier: 12, pprRk: 202, halfRk: 202, stdRk: 202},
-                    {ovr: 203, name: "Cole Kmet", pos: "TE", team: "CHI", tier: 12, pprRk: 203, halfRk: 203, stdRk: 203},
-                    {ovr: 204, name: "Alex Highsmith", pos: "DL", team: "PIT", tier: 11, pprRk: 204, halfRk: 204, stdRk: 204},
-                    {ovr: 205, name: "Frankie Luvu", pos: "LB", team: "CAR", tier: 11, pprRk: 205, halfRk: 205, stdRk: 205},
-                    {ovr: 206, name: "Taylor Rapp", pos: "DB", team: "BUF", tier: 11, pprRk: 206, halfRk: 206, stdRk: 206},
-                    {ovr: 207, name: "Russell Wilson", pos: "QB", team: "PIT", tier: 12, pprRk: 207, halfRk: 207, stdRk: 207},
-                    {ovr: 208, name: "AJ Dillon", pos: "RB", team: "GB", tier: 13, pprRk: 208, halfRk: 208, stdRk: 208},
-                    {ovr: 209, name: "Kadarius Toney", pos: "WR", team: "KC", tier: 13, pprRk: 209, halfRk: 209, stdRk: 209},
-                    {ovr: 210, name: "Logan Thomas", pos: "TE", team: "WAS", tier: 13, pprRk: 210, halfRk: 210, stdRk: 210},
-                    {ovr: 211, name: "Josh Sweat", pos: "DL", team: "PHI", tier: 12, pprRk: 211, halfRk: 211, stdRk: 211},
-                    {ovr: 212, name: "Willie Gay Jr.", pos: "LB", team: "NO", tier: 12, pprRk: 212, halfRk: 212, stdRk: 212},
-                    {ovr: 213, name: "Vonn Bell", pos: "DB", team: "CAR", tier: 12, pprRk: 213, halfRk: 213, stdRk: 213},
-                    {ovr: 214, name: "Kenny Pickett", pos: "QB", team: "PHI", tier: 13, pprRk: 214, halfRk: 214, stdRk: 214},
-                    {ovr: 215, name: "Jaleel McLaughlin", pos: "RB", team: "DEN", tier: 14, pprRk: 215, halfRk: 215, stdRk: 215},
-                    {ovr: 216, name: "Odell Beckham Jr.", pos: "WR", team: "MIA", tier: 14, pprRk: 216, halfRk: 216, stdRk: 216},
-                    {ovr: 217, name: "Gerald Everett", pos: "TE", team: "CHI", tier: 14, pprRk: 217, halfRk: 217, stdRk: 217},
-                    {ovr: 218, name: "Samson Ebukam", pos: "DL", team: "IND", tier: 13, pprRk: 218, halfRk: 218, stdRk: 218},
-                    {ovr: 219, name: "C.J. Mosley", pos: "LB", team: "NYJ", tier: 13, pprRk: 219, halfRk: 219, stdRk: 219},
-                    {ovr: 220, name: "Kamren Curl", pos: "DB", team: "LAR", tier: 13, pprRk: 220, halfRk: 220, stdRk: 220},
-                    {ovr: 221, name: "Matthew Stafford", pos: "QB", team: "LAR", tier: 14, pprRk: 221, halfRk: 221, stdRk: 221},
-                    {ovr: 222, name: "Jeff Wilson Jr.", pos: "RB", team: "MIA", tier: 15, pprRk: 222, halfRk: 222, stdRk: 222},
-                    {ovr: 223, name: "Darnell Mooney", pos: "WR", team: "ATL", tier: 15, pprRk: 223, halfRk: 223, stdRk: 223},
-                    {ovr: 224, name: "Tyler Higbee", pos: "TE", team: "LAR", tier: 15, pprRk: 224, halfRk: 224, stdRk: 224},
-                    {ovr: 225, name: "Azeez Ojulari", pos: "DL", team: "NYG", tier: 14, pprRk: 225, halfRk: 225, stdRk: 225},
-                    {ovr: 226, name: "Josey Jewell", pos: "LB", team: "CAR", tier: 14, pprRk: 226, halfRk: 226, stdRk: 226},
-                    {ovr: 227, name: "Grant Delpit", pos: "DB", team: "CLE", tier: 14, pprRk: 227, halfRk: 227, stdRk: 227},
-                    {ovr: 228, name: "Aaron Rodgers", pos: "QB", team: "NYJ", tier: 15, pprRk: 228, halfRk: 228, stdRk: 228},
-                    {ovr: 229, name: "Kareem Hunt", pos: "RB", team: "CLE", tier: 16, pprRk: 229, halfRk: 229, stdRk: 229},
-                    {ovr: 230, name: "Allen Lazard", pos: "WR", team: "NYJ", tier: 16, pprRk: 230, halfRk: 230, stdRk: 230},
-                    {ovr: 231, name: "Mo Alie-Cox", pos: "TE", team: "IND", tier: 16, pprRk: 231, halfRk: 231, stdRk: 231},
-                    {ovr: 232, name: "Dorance Armstrong", pos: "DL", team: "WAS", tier: 15, pprRk: 232, halfRk: 232, stdRk: 232},
-                    {ovr: 233, name: "Kyzir White", pos: "LB", team: "ARI", tier: 15, pprRk: 233, halfRk: 233, stdRk: 233},
-                    {ovr: 234, name: "Donte Jackson", pos: "DB", team: "PIT", tier: 15, pprRk: 234, halfRk: 234, stdRk: 234},
-                    {ovr: 235, name: "Jimmy Garoppolo", pos: "QB", team: "LAR", tier: 16, pprRk: 235, halfRk: 235, stdRk: 235},
-                    {ovr: 236, name: "Dalvin Cook", pos: "RB", team: "FA", tier: 17, pprRk: 236, halfRk: 236, stdRk: 236},
-                    {ovr: 237, name: "Mecole Hardman", pos: "WR", team: "KC", tier: 17, pprRk: 237, halfRk: 237, stdRk: 237},
-                    {ovr: 238, name: "Noah Fant", pos: "TE", team: "SEA", tier: 17, pprRk: 238, halfRk: 238, stdRk: 238},
-                    {ovr: 239, name: "Leonard Floyd", pos: "DL", team: "SF", tier: 16, pprRk: 239, halfRk: 239, stdRk: 239},
-                    {ovr: 240, name: "E.J. Speed", pos: "LB", team: "IND", tier: 16, pprRk: 240, halfRk: 240, stdRk: 240},
-                    {ovr: 241, name: "Marcus Williams", pos: "DB", team: "BAL", tier: 16, pprRk: 241, halfRk: 241, stdRk: 241},
-                    {ovr: 242, name: "Mac Jones", pos: "QB", team: "JAX", tier: 17, pprRk: 242, halfRk: 242, stdRk: 242},
-                    {ovr: 243, name: "Ezekiel Elliott", pos: "RB", team: "DAL", tier: 18, pprRk: 243, halfRk: 243, stdRk: 243},
-                    {ovr: 244, name: "Chase Claypool", pos: "WR", team: "BUF", tier: 18, pprRk: 244, halfRk: 244, stdRk: 244},
-                    {ovr: 245, name: "Hayden Hurst", pos: "TE", team: "LAC", tier: 18, pprRk: 245, halfRk: 245, stdRk: 245},
-                    {ovr: 246, name: "B.J. Ojulari", pos: "DL", team: "ARI", tier: 17, pprRk: 246, halfRk: 246, stdRk: 246},
-                    {ovr: 247, name: "Troy Andersen", pos: "LB", team: "ATL", tier: 17, pprRk: 247, halfRk: 247, stdRk: 247},
-                    {ovr: 248, name: "Adrian Amos", pos: "DB", team: "HOU", tier: 17, pprRk: 248, halfRk: 248, stdRk: 248},
-                    {ovr: 249, name: "Taylor Heinicke", pos: "QB", team: "ATL", tier: 18, pprRk: 249, halfRk: 249, stdRk: 249},
-                    {ovr: 250, name: "Jerick McKinnon", pos: "RB", team: "FA", tier: 19, pprRk: 250, halfRk: 250, stdRk: 250}
-                ];
-                this.state.filteredPlayers = this.state.players;
+            async fetchData() {
+                const mainContent = document.getElementById('main-content');
+                try {
+                    const functionUrl = `${window.location.origin}/.netlify/functions/espn`;
+                    const response = await fetch(functionUrl);
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch ESPN data. Status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    
+                    // Helper maps for converting ESPN IDs to human-readable names
+                    const proTeamMap = {0: "FA", 1: "ATL", 2: "BUF", 3: "CHI", 4: "CIN", 5: "CLE", 6: "DAL", 7: "DEN", 8: "DET", 9: "GB", 10: "TEN", 11: "IND", 12: "KC", 13: "LV", 14: "LAR", 15: "MIA", 16: "MIN", 17: "NE", 18: "NO", 19: "NYG", 20: "NYJ", 21: "PHI", 22: "ARI", 23: "PIT", 24: "LAC", 25: "SF", 26: "SEA", 27: "TB", 28: "WAS", 29: "CAR", 30: "JAX", 33: "BAL", 34: "HOU"};
+                    const positionMap = {1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST", 6: "P", 7: "DL", 8: "LB", 9: "DB", 10: "DE", 11: "DT", 12: "CB", 13: "S", 14: "HC", 15: "TMQB"};
+
+                    // Process the raw ESPN data into the format our app expects
+                    this.state.players = data.players.map(p => {
+                        const player = p.player;
+                        return {
+                            id: player.id,
+                            ovr: player.draftRanksByRankType?.STANDARD?.rank || 999,
+                            name: player.fullName,
+                            pos: positionMap[player.defaultPositionId] || 'N/A',
+                            team: proTeamMap[player.proTeamId] || 'N/A',
+                            tier: 1, // Tier data is not available from this endpoint, so we default to 1
+                            pprRk: player.draftRanksByRankType?.PPR?.rank || 999,
+                            stdRk: player.draftRanksByRankType?.STANDARD?.rank || 999,
+                            halfRk: 999, // Half-PPR not directly available, can be calculated if needed
+                        };
+                    }).filter(p => p.pos !== 'K' && p.pos !== 'D/ST' && p.ovr < 500); // Filter out kickers, defenses, and unranked players
+
+                    this.state.filteredPlayers = this.state.players;
+
+                } catch (error) {
+                    console.error("Error fetching or processing ESPN data:", error);
+                    mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
+                        <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
+                        <p>There was an error fetching the latest player rankings from ESPN. Please try refreshing the page. The unofficial API might be temporarily unavailable.</p>
+                    </div>`;
+                }
             },
 
             addEventListeners() {
@@ -469,18 +256,11 @@
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold mb-4 text-slate-900">Top Value Picks</h2>
-                            <p class="text-slate-600 mb-4">These players are identified as top values by comparing their Average Draft Position (ADP) to the Expert Consensus Ranking (ECR). Targeting them can give you a significant edge.</p>
+                            <h2 class="text-2xl font-bold mb-4 text-slate-900">Top Value Picks (Sample)</h2>
+                            <p class="text-slate-600 mb-4">Value data (ADP vs. ECR) is not available from this API endpoint. This section shows a sample of how it would look.</p>
                             <ul class="space-y-3">
-                                ${valuePicks.map(p => `
-                                    <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md">
-                                        <div>
-                                            <p class="font-semibold">${p.name} (${p.pos})</p>
-                                            <p class="text-sm text-slate-500">Value Score: +${(p.adp - p.ecr).toFixed(1)}</p>
-                                        </div>
-                                        <span class="text-sm font-bold text-amber-600">TARGET</span>
-                                    </li>
-                                `).join('')}
+                                <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md"><p class="font-semibold">Sample Player 1</p><span class="text-sm font-bold text-amber-600">TARGET</span></li>
+                                <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md"><p class="font-semibold">Sample Player 2</p><span class="text-sm font-bold text-amber-600">TARGET</span></li>
                             </ul>
                         </div>
                         <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
@@ -517,8 +297,8 @@
             getRankingsView() {
                 return `
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings</h2>
-                        <p class="text-slate-600 mb-6">Here you can find a comprehensive list of the top 250 players for the 2025 season. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
+                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live from ESPN)</h2>
+                        <p class="text-slate-600 mb-6">This is live player data from ESPN's fantasy platform. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
                         <div class="flex flex-wrap gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
@@ -534,8 +314,6 @@
                             <select id="scoringFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
                                 <option value="ovr">Overall Rank</option>
                                 <option value="pprRk">PPR Rank</option>
-                                <option value="halfRk">Half-PPR Rank</option>
-                                <option value="stdRk">Standard Rank</option>
                             </select>
                         </div>
                         <div class="overflow-x-auto">
@@ -594,7 +372,6 @@
                             <th class="p-3 font-semibold">Player</th>
                             <th class="p-3 font-semibold">Position</th>
                             <th class="p-3 font-semibold">Team</th>
-                            <th class="p-3 font-semibold">Tier</th>
                             <th class="p-3 font-semibold text-center">Actions</th>
                         </tr>
                     </thead>
@@ -605,9 +382,8 @@
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
-                                <td class="p-3 font-medium">${p.tier}</td>
                                 <td class="p-3 text-center">
-                                    <button data-player-ovr="${p.ovr}" class="analyze-btn bg-slate-200 text-slate-700 text-sm font-semibold py-1 px-3 rounded-full hover:bg-amber-200 transition-colors">✨ Analyze</button>
+                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-sm font-semibold py-1 px-3 rounded-full hover:bg-amber-200 transition-colors">✨ Analyze</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -616,8 +392,8 @@
 
                 document.querySelectorAll('.analyze-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const playerOvr = e.target.dataset.playerOvr;
-                        const player = this.state.players.find(p => p.ovr == playerOvr);
+                        const playerId = e.target.dataset.playerId;
+                        const player = this.state.players.find(p => p.id == playerId);
                         this.showPlayerAnalysis(player);
                     });
                 });
@@ -625,7 +401,7 @@
 
             async callGeminiAPI(prompt) {
                 // This URL points to our own serverless function, not directly to Google
-                const functionUrl = 'https://kchprojects.org/.netlify/functions/gemini';
+                const functionUrl = `${window.location.origin}/.netlify/functions/gemini`; 
                 
                 try {
                     const response = await fetch(functionUrl, {
