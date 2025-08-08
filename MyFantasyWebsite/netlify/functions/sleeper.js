@@ -1,35 +1,29 @@
-// This is your new serverless function to fetch data from the Sleeper API.
-// File location: netlify/functions/sleeper.js
+// netlify/functions/sleeper.js
+import fetch from "node-fetch";
 
-exports.handler = async function (event) {
-  // Only allow GET requests for this function
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
-
-  // The public endpoint for all NFL player data from Sleeper.
-  const SLEEPER_API_URL = 'https://api.sleeper.app/v1/players/nfl';
-
+export async function handler(event, context) {
   try {
-    const response = await fetch(SLEEPER_API_URL, {
-      headers: {
-        // Adding a User-Agent header to identify our request to the API
-        'User-Agent': 'Fantasy-Football-Draft-App/1.0'
-      }
-    });
+    const res = await fetch("https://api.sleeper.app/v1/league/YOUR_LEAGUE_ID");
+    const data = await res.json();
 
-    if (!response.ok) {
-      throw new Error(`Sleeper API request failed with status ${response.status}`);
-    }
-
-    const data = await response.json();
+    // Filter the data down to just what you need
+    const filtered = {
+      league_id: data.league_id,
+      name: data.name,
+      total_rosters: data.total_rosters,
+      scoring_settings: data.scoring_settings
+    };
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      body: JSON.stringify(filtered),
+      headers: { "Content-Type": "application/json" }
     };
   } catch (error) {
-    console.error("Error fetching from Sleeper API:", error);
-    return { statusCode: 500, body: `An error occurred: ${error.message}` };
+    console.error(error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to fetch Sleeper data" })
+    };
   }
-};
+}
