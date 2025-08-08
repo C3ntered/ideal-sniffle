@@ -146,37 +146,49 @@
             },
 
             async fetchData() {
-                const mainContent = document.getElementById('main-content');
-                try {
-                    const functionUrl = `/.netlify/functions/sleeper`;
-                    const response = await fetch(functionUrl);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
-                    }
-                    const filteredData = await response.json();
-                    
-                    this.state.players = filteredData
-                        .map((p, index) => ({
-                            id: p.player_id,
-                            ovr: p.adp || 9999, // Assign a high number if ADP is null
-                            name: p.full_name,
-                            pos: p.position,
-                            team: p.team,
-                            tier: 1, // Default tier
-                            pprRk: p.adp_ppr || 9999
-                        }))
-                        .sort((a, b) => a.ovr - b.ovr); // Sort by overall rank
-
-                    this.state.filteredPlayers = this.state.players;
-
-                } catch (error) {
-                    console.error("Error fetching or processing Sleeper data:", error);
-                    mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
-                        <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
-                        <p>There was an error fetching the latest player rankings from Sleeper. Please try refreshing the page.</p>
-                    </div>`;
+    const mainContent = document.getElementById('main-content');
+    try {
+        const functionUrl = `/.netlify/functions/sleeper`;
+        const response = await fetch(functionUrl);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
+        }
+        const filteredData = await response.json();
+        
+        // Improved player processing
+        this.state.players = filteredData
+            .filter(p => p.position) // Ensure position exists
+            .map(p => ({
+                id: p.player_id,
+                ovr: p.adp !== 999 ? p.adp : 999, // Keep 999 as is
+                name: p.full_name,
+                pos: p.position,
+                team: p.team || 'FA',
+                tier: 1,
+                pprRk: p.adp_ppr !== 999 ? p.adp_ppr : p.adp // Fallback to standard ADP
+            }))
+            .sort((a, b) => {
+                // Primary sort by ADP/PPR
+                const primarySort = a.ovr - b.ovr;
+                
+                // Secondary sort by position for players with same ADP
+                if (primarySort === 0) {
+                    return a.pos.localeCompare(b.pos);
                 }
-            },
+                
+                return primarySort;
+            });
+
+        this.state.filteredPlayers = this.state.players;
+
+    } catch (error) {
+        console.error("Error fetching or processing Sleeper data:", error);
+        mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
+            <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
+            <p>There was an error fetching the latest player rankings from Sleeper. Please try refreshing the page.</p>
+        </div>`;
+    }
+},
 
             addEventListeners() {
                 const nav = document.querySelector('nav');
