@@ -155,20 +155,19 @@
                     }
                     const data = await response.json();
                     
-                    // Process the raw Sleeper data into the format our app expects
                     this.state.players = Object.values(data)
                         .filter(p => p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
                         .map((p, index) => ({
                             id: p.player_id,
-                            ovr: p.fantasy_data?.adp || index + 1, // Use ADP for overall rank, fallback to index
+                            ovr: p.fantasy_data?.adp || index + 1,
                             name: `${p.first_name} ${p.last_name}`,
                             pos: p.position,
                             team: p.team || 'FA',
-                            tier: 1, // Default tier, as Sleeper API doesn't provide this
+                            tier: 1,
                             pprRk: p.fantasy_data?.ppr?.rank_ppr || index + 1,
                             stdRk: p.fantasy_data?.standard?.rank_std || index + 1,
                         }))
-                        .sort((a, b) => a.ovr - b.ovr); // Sort by overall rank
+                        .sort((a, b) => a.ovr - b.ovr);
 
                     this.state.filteredPlayers = this.state.players;
 
@@ -227,7 +226,6 @@
                 mainContent.innerHTML = `<div class="fade-in">${viewHtml}</div>`;
                 this.renderCharts();
                 
-                // Add event listeners for newly rendered content
                 if (this.state.currentView === 'rankings') {
                     this.addRankingsEventListeners();
                 }
@@ -566,13 +564,13 @@
                                     <div>
                                         <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
                                         <ul class="text-sm text-slate-600 list-disc list-inside">
-                                            ${idpTiers.slice(0, 4).map(p => `<li>${p.name}</li>`).join('')}
+                                            ${idpTiers[pos].slice(0, 4).map(p => `<li>${p.name}</li>`).join('')}
                                         </ul>
                                     </div>
                                     <div>
                                         <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
                                         <ul class="text-sm text-slate-600 list-disc list-inside">
-                                             ${idpTiers.slice(4, 8).map(p => `<li>${p.name}</li>`).join('')}
+                                             ${idpTiers[pos].slice(4, 8).map(p => `<li>${p.name}</li>`).join('')}
                                         </ul>
                                     </div>
                                      <div>
