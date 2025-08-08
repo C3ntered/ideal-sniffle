@@ -148,7 +148,7 @@
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
-                    const functionUrl = `/.netlify/functions/sleeper`;
+                    const functionUrl = `${window.location.origin}/.netlify/functions/sleeper`;
                     const response = await fetch(functionUrl);
                     if (!response.ok) {
                         throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
@@ -566,13 +566,13 @@
                                     <div>
                                         <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
                                         <ul class="text-sm text-slate-600 list-disc list-inside">
-                                            ${idpTiers[pos].filter(p => p.tier === 1).map(p => `<li>${p.name}</li>`).join('')}
+                                            ${idpTiers.slice(0, 4).map(p => `<li>${p.name}</li>`).join('')}
                                         </ul>
                                     </div>
                                     <div>
                                         <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
                                         <ul class="text-sm text-slate-600 list-disc list-inside">
-                                             ${idpTiers[pos].filter(p => p.tier === 2).map(p => `<li>${p.name}</li>`).join('')}
+                                             ${idpTiers.slice(4, 8).map(p => `<li>${p.name}</li>`).join('')}
                                         </ul>
                                     </div>
                                      <div>
