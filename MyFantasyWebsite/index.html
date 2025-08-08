@@ -111,7 +111,7 @@
         <main id="main-content">
             <div class="flex justify-center items-center h-64">
                 <div class="spinner"></div>
-                <p class="ml-4 text-slate-600">Fetching latest player data from ESPN...</p>
+                <p class="ml-4 text-slate-600">Fetching latest player data from Sleeper...</p>
             </div>
         </main>
     </div>
@@ -148,40 +148,35 @@
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
-                    const functionUrl = `${window.location.origin}/.netlify/functions/espn`;
+                    const functionUrl = `/.netlify/functions/sleeper`;
                     const response = await fetch(functionUrl);
                     if (!response.ok) {
-                        throw new Error(`Failed to fetch ESPN data. Status: ${response.status}`);
+                        throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
                     }
                     const data = await response.json();
                     
-                    // Helper maps for converting ESPN IDs to human-readable names
-                    const proTeamMap = {0: "FA", 1: "ATL", 2: "BUF", 3: "CHI", 4: "CIN", 5: "CLE", 6: "DAL", 7: "DEN", 8: "DET", 9: "GB", 10: "TEN", 11: "IND", 12: "KC", 13: "LV", 14: "LAR", 15: "MIA", 16: "MIN", 17: "NE", 18: "NO", 19: "NYG", 20: "NYJ", 21: "PHI", 22: "ARI", 23: "PIT", 24: "LAC", 25: "SF", 26: "SEA", 27: "TB", 28: "WAS", 29: "CAR", 30: "JAX", 33: "BAL", 34: "HOU"};
-                    const positionMap = {1: "QB", 2: "RB", 3: "WR", 4: "TE", 5: "K", 16: "D/ST", 6: "P", 7: "DL", 8: "LB", 9: "DB", 10: "DE", 11: "DT", 12: "CB", 13: "S", 14: "HC", 15: "TMQB"};
-
-                    // Process the raw ESPN data into the format our app expects
-                    this.state.players = data.players.map(p => {
-                        const player = p.player;
-                        return {
-                            id: player.id,
-                            ovr: player.draftRanksByRankType?.STANDARD?.rank || 999,
-                            name: player.fullName,
-                            pos: positionMap[player.defaultPositionId] || 'N/A',
-                            team: proTeamMap[player.proTeamId] || 'N/A',
-                            tier: 1, // Tier data is not available from this endpoint, so we default to 1
-                            pprRk: player.draftRanksByRankType?.PPR?.rank || 999,
-                            stdRk: player.draftRanksByRankType?.STANDARD?.rank || 999,
-                            halfRk: 999, // Half-PPR not directly available, can be calculated if needed
-                        };
-                    }).filter(p => p.pos !== 'K' && p.pos !== 'D/ST' && p.ovr < 500); // Filter out kickers, defenses, and unranked players
+                    // Process the raw Sleeper data into the format our app expects
+                    this.state.players = Object.values(data)
+                        .filter(p => p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
+                        .map((p, index) => ({
+                            id: p.player_id,
+                            ovr: p.fantasy_data?.adp || index + 1, // Use ADP for overall rank, fallback to index
+                            name: `${p.first_name} ${p.last_name}`,
+                            pos: p.position,
+                            team: p.team || 'FA',
+                            tier: 1, // Default tier, as Sleeper API doesn't provide this
+                            pprRk: p.fantasy_data?.ppr?.rank_ppr || index + 1,
+                            stdRk: p.fantasy_data?.standard?.rank_std || index + 1,
+                        }))
+                        .sort((a, b) => a.ovr - b.ovr); // Sort by overall rank
 
                     this.state.filteredPlayers = this.state.players;
 
                 } catch (error) {
-                    console.error("Error fetching or processing ESPN data:", error);
+                    console.error("Error fetching or processing Sleeper data:", error);
                     mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
                         <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
-                        <p>There was an error fetching the latest player rankings from ESPN. Please try refreshing the page. The unofficial API might be temporarily unavailable.</p>
+                        <p>There was an error fetching the latest player rankings from Sleeper. Please try refreshing the page.</p>
                     </div>`;
                 }
             },
@@ -245,7 +240,6 @@
             },
 
             getDashboardView() {
-                const valuePicks = this.state.players.filter(p => p.adp && p.ecr).sort((a, b) => (b.adp - b.ecr) - (a.adp - a.ecr)).slice(0, 5);
                 return `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
@@ -297,8 +291,8 @@
             getRankingsView() {
                 return `
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live from ESPN)</h2>
-                        <p class="text-slate-600 mb-6">This is live player data from ESPN's fantasy platform. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
+                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live from Sleeper)</h2>
+                        <p class="text-slate-600 mb-6">This is live player data from the Sleeper API. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
                         <div class="flex flex-wrap gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
@@ -376,9 +370,9 @@
                         </tr>
                     </thead>
                     <tbody>
-                        ${sortedPlayers.map(p => `
+                        ${sortedPlayers.slice(0, 250).map(p => `
                             <tr class="border-b border-slate-200 hover:bg-slate-50">
-                                <td class="p-3 font-bold text-amber-600">${p[scoringFormat] || p.ovr}</td>
+                                <td class="p-3 font-bold text-amber-600">${Math.round(p[scoringFormat] || p.ovr)}</td>
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
@@ -401,7 +395,7 @@
 
             async callGeminiAPI(prompt) {
                 // This URL points to our own serverless function, not directly to Google
-                const functionUrl = `${window.location.origin}/.netlify/functions/gemini`; 
+                const functionUrl = `/.netlify/functions/gemini`; 
                 
                 try {
                     const response = await fetch(functionUrl, {
