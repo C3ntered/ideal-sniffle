@@ -7,23 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Slate & Amber -->
-    <!-- Application Structure Plan: A single-page dashboard application designed for optimal user flow during a fantasy draft. The structure is thematic, not linear, allowing users to quickly access the information they need most.
-    1. Header: Title and main navigation.
-    2. Main Nav: Buttons to switch between major sections (Dashboard, Player Rankings, Draft Strategy, IDP Guide). This provides a clear, task-oriented flow.
-    3. Dashboard (Default View): The central hub. It features high-level summary cards for quick insights (Top Value Picks, Positional Scarcity), an interactive chart comparing draft strategies, foundational principles, and a new AI Team Name Generator powered by the Gemini API.
-    4. Player Rankings Section: A detailed, searchable, and filterable table of all players. Each player row now includes an "Analyze" button that uses the Gemini API to generate a detailed player outlook in a modal window.
-    5. Draft Strategy Section: A deep dive into the core offensive strategies. It uses a card-based layout to present "Robust RB," "Zero RB," and "Hero RB" side-by-side for easy comparison. It now also includes a "Round-by-Round Strategy Explorer" that uses the Gemini API to generate targeted advice for specific draft stages.
-    6. IDP Guide Section: Dedicated section for defensive players, mirroring the offensive player section with tiered rankings and strategic advice for DL, LB, and DB.
-    This architecture prioritizes quick access to actionable data while integrating AI-powered features to provide deeper, on-demand insights and creative assistance. -->
-    <!-- Visualization & Content Choices:
-    - Report Info: Draft Strategy Comparison. Goal: Compare frameworks. Viz/Method: Interactive Bar Chart (Chart.js). Interaction: Tooltips. Justification: Clear visual comparison.
-    - Report Info: Top Draft Value Players. Goal: Inform on market inefficiencies. Viz/Method: Dynamic HTML list. Justification: Direct, scannable information.
-    - Report Info: Detailed Player Rankings. Goal: Provide filterable player list. Viz/Method: Interactive HTML Table. Interaction: Search/filter. Justification: Essential for real-time data retrieval.
-    - NEW Gemini Feature: AI Player Analysis. Goal: Provide deep, on-demand player insights. Viz/Method: Modal window with text. Interaction: Button click on player row. Justification: Integrates AI analysis directly into the user's workflow without cluttering the main UI.
-    - NEW Gemini Feature: AI Team Name Generator. Goal: Provide a fun, creative tool. Viz/Method: Input field and results list. Interaction: Button click. Justification: A classic fantasy feature that showcases the creative text generation capabilities of the Gemini API.
-    - NEW Gemini Feature: Round-by-Round Strategy. Goal: Provide granular, stage-specific draft advice. Viz/Method: Dropdown menu and results box. Interaction: Button click. Justification: Makes the strategy section more actionable and dynamic, providing real-time advice powered by AI. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -145,43 +128,33 @@
                 this.addEventListeners();
             },
 
+            // FIX: Reverted to use the Netlify serverless function for Sleeper data.
+            // This assumes your '/.netlify/functions/sleeper' function fetches from both Sleeper APIs 
+            // and returns a single, combined array of player data.
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
-                    // This is a placeholder URL. In a real application, you would point this to your Netlify serverless function.
-                    const functionUrl = `https://api.sleeper.app/v1/players/nfl`;
+                    const functionUrl = `/.netlify/functions/sleeper`;
                     const response = await fetch(functionUrl);
                     if (!response.ok) {
-                        throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
+                        throw new Error(`Failed to fetch Sleeper data from serverless function. Status: ${response.status}`);
                     }
-                    const rawData = await response.json();
+                    const combinedData = await response.json();
                     
-                    // Fetch ADP data
-                    const adpResponse = await fetch('https://api.sleeper.app/v1/draft/nfl/adp?season=2024&format=superflex&position=ALL');
-                    const adpData = await adpResponse.json();
-                    const adpMap = new Map(adpData.map(p => [p.player_id, { adp: p.adp, adp_ppr: p.adp_ppr }]));
-
-                    // FIX #2: Set a maximum rank to filter out irrelevant players.
-                    // This will remove deep defensive players and others who are unlikely to be drafted.
                     const maxRank = 300; 
 
-                    const filteredData = Object.values(rawData).map(p => {
-                        const adpInfo = adpMap.get(p.player_id);
-                        return { ...p, ...adpInfo };
-                    });
-
-                    this.state.players = filteredData
-                        .filter(p => p.adp && p.adp <= maxRank) // Only include players with an ADP and within the top rank limit
-                        .map((p, index) => ({
+                    this.state.players = combinedData
+                        .filter(p => p.adp && p.adp <= maxRank) // Filter based on the combined data
+                        .map(p => ({
                             id: p.player_id,
                             ovr: p.adp,
-                            name: `${p.first_name} ${p.last_name}`,
+                            name: p.full_name, // Use full_name provided by the serverless function
                             pos: p.position,
                             team: p.team,
-                            tier: 1, // Default tier
-                            pprRk: p.adp_ppr || p.adp // Fallback to standard ADP if PPR ADP is missing
+                            tier: 1, 
+                            pprRk: p.adp_ppr || p.adp 
                         }))
-                        .sort((a, b) => a.ovr - b.ovr);
+                        .sort((a, b) => (a.ovr || 999) - (b.ovr || 999));
 
                     this.state.filteredPlayers = this.state.players;
 
@@ -189,7 +162,8 @@
                     console.error("Error fetching or processing Sleeper data:", error);
                     mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
                         <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
-                        <p>There was an error fetching the latest player rankings from Sleeper. Please try refreshing the page.</p>
+                        <p>There was an error fetching the latest player rankings. This could be an issue with the Sleeper API or the serverless function. Please check the console and try refreshing.</p>
+                        <p class="text-sm mt-2">Error: ${error.message}</p>
                     </div>`;
                 }
             },
@@ -352,21 +326,17 @@
                 }
             },
             
-            // FIX #1: This function now handles both filtering AND sorting.
             filterAndRenderTable() {
                 const searchTerm = document.getElementById('searchInput').value.toLowerCase();
                 const posFilter = document.getElementById('posFilter').value;
                 const scoringFormat = document.getElementById('scoringFilter').value;
                 
-                // First, filter the players based on name and position.
                 let filtered = this.state.players.filter(p => {
                     const nameMatch = p.name.toLowerCase().includes(searchTerm);
                     const posMatch = posFilter === 'ALL' || p.pos === posFilter;
                     return nameMatch && posMatch;
                 });
 
-                // Then, sort the *filtered* list based on the selected scoring format.
-                // Using '|| 999' provides a fallback for players who might not have a PPR rank.
                 if(scoringFormat === 'pprRk') {
                      filtered.sort((a,b) => (a.pprRk || 999) - (b.pprRk || 999));
                 } else {
@@ -383,7 +353,6 @@
                 const table = document.getElementById('rankingsTable');
                 if (!table) return;
 
-                // The players are already filtered and sorted, so we just need to render them.
                 const playersToRender = this.state.filteredPlayers;
 
                 table.innerHTML = `
@@ -422,12 +391,31 @@
                 });
             },
 
+            // FIX: Replaced mock API call with a real implementation for the Gemini serverless function.
             async callGeminiAPI(prompt) {
-                // This is a placeholder for your actual Gemini API call via a serverless function.
-                // For demonstration, this will return a mock response.
-                console.log("Calling Gemini API with prompt:", prompt);
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-                return `This is a mock AI response for the prompt: "${prompt.substring(0, 100)}..." In a real application, this would be a detailed analysis from the Gemini API.`;
+                const functionUrl = `/.netlify/functions/gemini`;
+                try {
+                    const response = await fetch(functionUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || `Serverless function failed with status ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    if (result.text) {
+                        return result.text;
+                    } else {
+                        return "Sorry, the AI analysis could not be generated at this time.";
+                    }
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    return `An error occurred while fetching the AI analysis: ${error.message}`;
+                }
             },
 
             async showPlayerAnalysis(player) {
@@ -460,7 +448,7 @@
                 const prompt = `Generate 10 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Include some puns related to current or famous NFL players.`;
 
                 const namesText = await this.callGeminiAPI(prompt);
-                const namesArray = namesText.split('\n').filter(name => name.trim() !== '');
+                const namesArray = namesText.split('\n').filter(name => name.trim() !== '' && !/^\d+\.\s*/.test(name));
                 
                 resultsContainer.innerHTML = `
                     <ul class="list-disc list-inside space-y-2">
