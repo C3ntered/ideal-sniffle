@@ -128,27 +128,48 @@
                 this.addEventListeners();
             },
 
-            // FIX: Reverted to use the Netlify serverless function for Sleeper data.
-            // This assumes your '/.netlify/functions/sleeper' function fetches from both Sleeper APIs 
-            // and returns a single, combined array of player data.
+            // FIX: This function now correctly fetches from your serverless function and the live Sleeper ADP endpoint,
+            // then merges them on the client-side. This is the key fix to make players appear.
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
-                    const functionUrl = `/.netlify/functions/sleeper`;
-                    const response = await fetch(functionUrl);
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch Sleeper data from serverless function. Status: ${response.status}`);
+                    // Step 1: Fetch the base player data from your Netlify function.
+                    const playerFunctionUrl = `/.netlify/functions/sleeper`;
+                    const playerResponse = await fetch(playerFunctionUrl);
+                    if (!playerResponse.ok) {
+                        throw new Error(`Sleeper function failed. Status: ${playerResponse.status}`);
                     }
-                    const combinedData = await response.json();
+                    const basePlayers = await playerResponse.json();
+
+                    // Step 2: Fetch the ADP data directly from the Sleeper API.
+                    const adpUrl = 'https://api.sleeper.app/v1/draft/nfl/adp?season=2024&format=superflex&position=ALL';
+                    const adpResponse = await fetch(adpUrl);
+                     if (!adpResponse.ok) {
+                        throw new Error(`Sleeper ADP API failed. Status: ${adpResponse.status}`);
+                    }
+                    const adpData = await adpResponse.json();
                     
+                    // Step 3: Create a quick-lookup map for ADP data.
+                    const adpMap = new Map(adpData.map(p => [p.player_id, { adp: p.adp, adp_ppr: p.adp_ppr }]));
+
+                    // Step 4: Merge the two datasets.
+                    const combinedData = basePlayers.map(player => {
+                        const adpInfo = adpMap.get(player.player_id);
+                        return {
+                            ...player,
+                            adp: adpInfo?.adp,
+                            adp_ppr: adpInfo?.adp_ppr
+                        };
+                    });
+
                     const maxRank = 300; 
 
                     this.state.players = combinedData
-                        .filter(p => p.adp && p.adp <= maxRank) // Filter based on the combined data
+                        .filter(p => p.adp && p.adp <= maxRank) // Filter based on the merged data
                         .map(p => ({
                             id: p.player_id,
                             ovr: p.adp,
-                            name: p.full_name, // Use full_name provided by the serverless function
+                            name: p.full_name,
                             pos: p.position,
                             team: p.team,
                             tier: 1, 
@@ -391,7 +412,7 @@
                 });
             },
 
-            // FIX: Replaced mock API call with a real implementation for the Gemini serverless function.
+            // FIX: This function now correctly parses the full response from your gemini.js function.
             async callGeminiAPI(prompt) {
                 const functionUrl = `/.netlify/functions/gemini`;
                 try {
@@ -402,13 +423,14 @@
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || `Serverless function failed with status ${response.status}`);
+                        const errorText = await response.text();
+                        throw new Error(`Gemini function failed with status ${response.status}: ${errorText}`);
                     }
 
                     const result = await response.json();
-                    if (result.text) {
-                        return result.text;
+                    // Parse the nested structure from the Gemini API response
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts[0].text) {
+                        return result.candidates[0].content.parts[0].text;
                     } else {
                         return "Sorry, the AI analysis could not be generated at this time.";
                     }
@@ -445,14 +467,15 @@
 
                 resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating names...</p></div>';
 
-                const prompt = `Generate 10 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Include some puns related to current or famous NFL players.`;
+                const prompt = `Generate 10 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Format them as a simple list without numbers.`;
 
                 const namesText = await this.callGeminiAPI(prompt);
-                const namesArray = namesText.split('\n').filter(name => name.trim() !== '' && !/^\d+\.\s*/.test(name));
+                // FIX: Clean up the response for better display
+                const namesArray = namesText.split('\n').filter(name => name.trim() !== '').map(name => name.replace(/^- \s*/, ''));
                 
                 resultsContainer.innerHTML = `
                     <ul class="list-disc list-inside space-y-2">
-                        ${namesArray.map(name => `<li>${name.replace(/^\d+\.\s*/, '')}</li>`).join('')}
+                        ${namesArray.map(name => `<li>${name}</li>`).join('')}
                     </ul>
                 `;
             },
