@@ -8,49 +8,43 @@ exports.handler = async function (event) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // We need two URLs: one for all player details and one for ADP data
   const SLEEPER_PLAYERS_URL = 'https://api.sleeper.app/v1/players/nfl';
   const SLEEPER_ADP_URL = 'https://api.sleeper.app/v1/draft/nfl/adp';
 
   try {
-    // Fetch both endpoints at the same time for efficiency
     const [playersResponse, adpResponse] = await Promise.all([
       fetch(SLEEPER_PLAYERS_URL),
       fetch(SLEEPER_ADP_URL)
     ]);
 
-    if (!playersResponse.ok) {
-      throw new Error(`Sleeper Players API request failed with status ${playersResponse.status}`);
-    }
-    if (!adpResponse.ok) {
-        throw new Error(`Sleeper ADP API request failed with status ${adpResponse.status}`);
+    if (!playersResponse.ok || !adpResponse.ok) {
+      throw new Error(`Sleeper API request failed. Players: ${playersResponse.status}, ADP: ${adpResponse.status}`);
     }
     
-    const allPlayers = await playersResponse.json(); // This is a large object keyed by player_id
-    const adpData = await adpResponse.json(); // This is an array of players with ADP ranks
+    const allPlayers = await playersResponse.json();
+    const adpData = await adpResponse.json();
 
-    // Merge the ADP data with the main player list
-    const mergedAndFilteredPlayers = Object.values(adpData)
-      .map(adpPlayer => {
-        const playerDetails = allPlayers[adpPlayer.player_id];
+    // Correctly merge the data by iterating over the keys (player IDs) of the ADP object
+    const mergedAndFilteredPlayers = Object.keys(adpData)
+      .map(playerId => {
+        const adpInfo = adpData[playerId];
+        const playerDetails = allPlayers[playerId];
 
-        // If player details don't exist for some reason, skip them
-        if (!playerDetails) {
+        if (!playerDetails || !adpInfo) {
           return null;
         }
         
         // Combine the data from both sources
         return {
-          player_id: adpPlayer.player_id,
+          player_id: playerId,
           full_name: playerDetails.full_name || `${playerDetails.first_name} ${playerDetails.last_name}`,
           position: playerDetails.position,
           team: playerDetails.team || 'FA',
           active: playerDetails.active,
-          adp: parseFloat(adpPlayer.adp) || 999,
-          adp_ppr: parseFloat(adpPlayer.adp_ppr) || 999
+          adp: parseFloat(adpInfo.adp) || 999,
+          adp_ppr: parseFloat(adpInfo.adp_ppr) || 999
         };
       })
-      // Now filter the merged list to get only the players we want
       .filter(p => p && p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position));
 
     return {
@@ -63,7 +57,7 @@ exports.handler = async function (event) {
     console.error("Error in sleeper function:", error);
     return { 
       statusCode: 500, 
-      body: JSON.stringify({ error: "Failed to fetch player data from Sleeper" })
+      body: JSON.stringify({ error: "Failed to fetch or process player data from Sleeper" })
     };
   }
 };
