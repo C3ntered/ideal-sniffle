@@ -1,45 +1,680 @@
-// This function fetches the large player list from Sleeper,
-// filters it down to only the necessary data, and returns a smaller, faster payload.
-// File location: netlify/functions/sleeper.js
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 Fantasy Football Draft Dashboard with AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .nav-btn {
+            transition: all 0.3s ease;
+        }
+        .nav-btn.active {
+            background-color: #f59e0b; /* amber-500 */
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #f59e0b;
+            animation: spin 1s ease infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
 
-exports.handler = async function (event) {
-  // Only allow GET requests for this function
-  if (event.httpMethod !== 'GET') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
-  }
+    <div id="app-container" class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-900">2025 Fantasy Football AI Dashboard</h1>
+            <p class="text-slate-600 mt-2 text-lg">Your interactive guide to dominating your Superflex & IDP league.</p>
+        </header>
 
-  const SLEEPER_API_URL = 'https://api.sleeper.app/v1/players/nfl';
+        <nav class="flex justify-center mb-8 bg-slate-200 rounded-lg p-2 shadow-inner">
+            <button data-view="dashboard" class="nav-btn active text-slate-700 font-semibold py-2 px-4 rounded-md">Dashboard</button>
+            <button data-view="rankings" class="nav-btn text-slate-700 font-semibold py-2 px-4 rounded-md">Player Rankings</button>
+            <button data-view="strategy" class="nav-btn text-slate-700 font-semibold py-2 px-4 rounded-md">Draft Strategies</button>
+            <button data-view="idp" class="nav-btn text-slate-700 font-semibold py-2 px-4 rounded-md">IDP Guide</button>
+        </nav>
 
-  try {
-    const response = await fetch(SLEEPER_API_URL);
-    if (!response.ok) {
-      throw new Error(`Sleeper API request failed with status ${response.status}`);
-    }
-    const players = await response.json();
+        <main id="main-content">
+            <div class="flex justify-center items-center h-64">
+                <div class="spinner"></div>
+                <p class="ml-4 text-slate-600">Fetching latest player data from Sleeper...</p>
+            </div>
+        </main>
+    </div>
 
-    // Convert the large player object into a smaller, filtered array
-    const filteredPlayers = Object.values(players)
-      .filter(p => p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position))
-      .map(p => ({
-        player_id: p.player_id,
-        full_name: p.full_name || `${p.first_name} ${p.last_name}`,
-        position: p.position,
-        team: p.team || 'FA',
-        adp: p.fantasy_data?.adp || 999,
-        adp_ppr: p.fantasy_data?.adp_ppr || 999
-      }));
+    <!-- Modal for AI Player Analysis -->
+    <div id="ai-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold text-slate-900">AI Analysis</h2>
+                <button id="modal-close-btn" class="text-slate-500 hover:text-slate-800 text-3xl leading-none">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- AI content will be injected here -->
+            </div>
+        </div>
+    </div>
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify(filteredPlayers),
-      headers: { "Content-Type": "application/json" }
-    };
 
-  } catch (error) {
-    console.error("Error in sleeper function:", error);
-    return { 
-      statusCode: 500, 
-      body: JSON.stringify({ error: "Failed to fetch player data from Sleeper" })
-    };
-  }
-};
+    <script>
+        const App = {
+            state: {
+                currentView: 'dashboard',
+                players: [],
+                filteredPlayers: [],
+                charts: {}
+            },
+            
+            async init() {
+                await this.fetchData();
+                this.render();
+                this.addEventListeners();
+            },
+
+            async fetchData() {
+                const mainContent = document.getElementById('main-content');
+                try {
+                    // Step 1: Fetch the base player data from your Netlify function.
+                    const playerFunctionUrl = `/.netlify/functions/sleeper`;
+                    const playerResponse = await fetch(playerFunctionUrl);
+                    if (!playerResponse.ok) {
+                        throw new Error(`Sleeper function failed. Status: ${playerResponse.status}`);
+                    }
+                    const basePlayers = await playerResponse.json();
+
+                    // Step 2: Fetch the ADP data directly from the Sleeper API.
+                    // THIS IS THE FIX: The URL now correctly includes '/v1/' which was missing and causing the 404 error.
+                    const adpUrl = 'https://api.sleeper.app/v1/draft/nfl/adp?season=2024&format=superflex&position=ALL';
+                    const adpResponse = await fetch(adpUrl);
+                     if (!adpResponse.ok) {
+                        throw new Error(`Sleeper ADP API failed. Status: ${adpResponse.status}`);
+                    }
+                    const adpData = await adpResponse.json();
+                    
+                    // Step 3: Create a quick-lookup map for ADP data.
+                    const adpMap = new Map(adpData.map(p => [p.player_id, { adp: p.adp, adp_ppr: p.adp_ppr }]));
+
+                    // Step 4: Merge the two datasets.
+                    const combinedData = basePlayers.map(player => {
+                        const adpInfo = adpMap.get(player.player_id);
+                        return {
+                            ...player,
+                            adp: adpInfo?.adp,
+                            adp_ppr: adpInfo?.adp_ppr
+                        };
+                    });
+
+                    const maxRank = 300; 
+
+                    this.state.players = combinedData
+                        .filter(p => p.adp && p.adp <= maxRank) // Filter based on the merged data
+                        .map(p => ({
+                            id: p.player_id,
+                            ovr: p.adp,
+                            name: p.full_name,
+                            pos: p.position,
+                            team: p.team,
+                            tier: 1, 
+                            pprRk: p.adp_ppr || p.adp 
+                        }))
+                        .sort((a, b) => (a.ovr || 999) - (b.ovr || 999));
+
+                    this.state.filteredPlayers = this.state.players;
+
+                } catch (error) {
+                    console.error("Error fetching or processing Sleeper data:", error);
+                    mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
+                        <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
+                        <p>There was an error fetching the latest player rankings. This could be an issue with the Sleeper API or the serverless function. Please check the console and try refreshing.</p>
+                        <p class="text-sm mt-2">Error: ${error.message}</p>
+                    </div>`;
+                }
+            },
+
+            addEventListeners() {
+                const nav = document.querySelector('nav');
+                nav.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'BUTTON') {
+                        this.state.currentView = e.target.dataset.view;
+                        this.render();
+                    }
+                });
+
+                const modal = document.getElementById('ai-modal');
+                const closeBtn = document.getElementById('modal-close-btn');
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        modal.classList.add('hidden');
+                    }
+                });
+                closeBtn.addEventListener('click', () => {
+                    modal.classList.add('hidden');
+                });
+            },
+            
+            render() {
+                const mainContent = document.getElementById('main-content');
+                
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.view === this.state.currentView);
+                });
+
+                let viewHtml = '';
+                switch (this.state.currentView) {
+                    case 'dashboard':
+                        viewHtml = this.getDashboardView();
+                        break;
+                    case 'rankings':
+                        viewHtml = this.getRankingsView();
+                        break;
+                    case 'strategy':
+                        viewHtml = this.getStrategyView();
+                        break;
+                    case 'idp':
+                        viewHtml = this.getIdpView();
+                        break;
+                }
+                mainContent.innerHTML = `<div class="fade-in">${viewHtml}</div>`;
+                this.renderCharts();
+                
+                if (this.state.currentView === 'rankings') {
+                    this.addRankingsEventListeners();
+                }
+                if (this.state.currentView === 'dashboard') {
+                    this.addDashboardEventListeners();
+                }
+                if (this.state.currentView === 'strategy') {
+                    this.addStrategyEventListeners();
+                }
+            },
+
+            getDashboardView() {
+                return `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold mb-4 text-slate-900">Draft Strategy Comparison</h2>
+                            <p class="text-slate-600 mb-4">This chart provides a high-level comparison of foundational draft strategies. Each approach carries different risks and rewards, influencing how you should allocate your early-round picks. Hover over the bars for a brief explanation of each strategy's core philosophy.</p>
+                            <div class="chart-container">
+                                <canvas id="strategyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold mb-4 text-slate-900">Top Value Picks (Sample)</h2>
+                            <p class="text-slate-600 mb-4">Value data (ADP vs. ECR) is not available from this API endpoint. This section shows a sample of how it would look.</p>
+                            <ul class="space-y-3">
+                                <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md"><p class="font-semibold">Sample Player 1</p><span class="text-sm font-bold text-amber-600">TARGET</span></li>
+                                <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md"><p class="font-semibold">Sample Player 2</p><span class="text-sm font-bold text-amber-600">TARGET</span></li>
+                            </ul>
+                        </div>
+                        <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold mb-4 text-slate-900">✨ AI Team Name Generator</h2>
+                            <p class="text-slate-600 mb-4">Need some inspiration for a team name? Enter a few keywords (like your favorite player, team, or an inside joke) and let our AI generate some creative options for you!</p>
+                            <div class="flex gap-2">
+                                <input type="text" id="name-generator-input" placeholder="e.g., 'Bijan, mustard, champion'" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
+                                <button id="name-generator-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-md hover:bg-amber-600 transition-colors">Generate Names</button>
+                            </div>
+                            <div id="name-generator-results" class="mt-4 p-4 bg-slate-50 rounded-md min-h-[100px]"></div>
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+                             <h2 class="text-2xl font-bold mb-4 text-slate-900">Foundational Principles</h2>
+                             <p class="text-slate-600 mb-4">Success starts with understanding the core concepts of your league. Your specific rules for scoring, rosters (Superflex, IDP), and league size are the most critical factors in determining player value. This dashboard is tailored to a 10-team, Superflex, IDP format, which places a massive premium on quarterbacks and requires a balanced approach to drafting both offense and defense.</p>
+                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                                <div class="bg-amber-50 p-4 rounded-lg">
+                                    <h3 class="font-semibold text-amber-800">Superflex is King</h3>
+                                    <p class="text-sm text-amber-700">In this format, QBs are the most valuable assets. Securing two reliable starters is paramount.</p>
+                                </div>
+                                <div class="bg-sky-50 p-4 rounded-lg">
+                                    <h3 class="font-semibold text-sky-800">Positional Scarcity</h3>
+                                    <p class="text-sm text-sky-700">Understand the drop-off in talent at each position. Elite RBs and TEs are rare commodities.</p>
+                                </div>
+                                 <div class="bg-emerald-50 p-4 rounded-lg">
+                                    <h3 class="font-semibold text-emerald-800">Tiers Over Ranks</h3>
+                                    <p class="text-sm text-emerald-700">Draft from the best available tier, not just the next player on a list. Avoid reaching.</p>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            getRankingsView() {
+                return `
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live from Sleeper)</h2>
+                        <p class="text-slate-600 mb-6">This is live player data from the Sleeper API. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
+                        <div class="flex flex-wrap gap-4 mb-4">
+                            <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
+                            <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="ALL">All Positions</option>
+                                <option value="QB">QB</option>
+                                <option value="RB">RB</option>
+                                <option value="WR">WR</option>
+                                <option value="TE">TE</option>
+                                <option value="DL">DL</option>
+                                <option value="LB">LB</option>
+                                <option value="DB">DB</option>
+                            </select>
+                            <select id="scoringFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="ovr">Overall Rank</option>
+                                <option value="pprRk">PPR Rank</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left" id="rankingsTable">
+                                <!-- Table content will be generated by JS -->
+                            </table>
+                        </div>
+                    </div>
+                `;
+            },
+
+            addDashboardEventListeners() {
+                const genBtn = document.getElementById('name-generator-btn');
+                if(genBtn) {
+                    genBtn.addEventListener('click', () => this.generateTeamNames());
+                }
+            },
+
+            addRankingsEventListeners() {
+                document.getElementById('searchInput').addEventListener('input', () => this.filterAndRenderTable());
+                document.getElementById('posFilter').addEventListener('change', () => this.filterAndRenderTable());
+                document.getElementById('scoringFilter').addEventListener('change', () => this.filterAndRenderTable());
+                this.renderTable();
+            },
+
+            addStrategyEventListeners() {
+                const adviceBtn = document.getElementById('get-round-advice-btn');
+                if(adviceBtn) {
+                    adviceBtn.addEventListener('click', () => this.getRoundByRoundAdvice());
+                }
+            },
+            
+            filterAndRenderTable() {
+                const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+                const posFilter = document.getElementById('posFilter').value;
+                const scoringFormat = document.getElementById('scoringFilter').value;
+                
+                let filtered = this.state.players.filter(p => {
+                    const nameMatch = p.name.toLowerCase().includes(searchTerm);
+                    const posMatch = posFilter === 'ALL' || p.pos === posFilter;
+                    return nameMatch && posMatch;
+                });
+
+                if(scoringFormat === 'pprRk') {
+                     filtered.sort((a,b) => (a.pprRk || 999) - (b.pprRk || 999));
+                } else {
+                    filtered.sort((a,b) => (a.ovr || 999) - (b.ovr || 999));
+                }
+
+                this.state.filteredPlayers = filtered;
+
+                this.renderTable();
+            },
+
+            renderTable() {
+                const scoringFormat = document.getElementById('scoringFilter')?.value || 'ovr';
+                const table = document.getElementById('rankingsTable');
+                if (!table) return;
+
+                const playersToRender = this.state.filteredPlayers;
+
+                table.innerHTML = `
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="p-3 font-semibold">Rank</th>
+                            <th class="p-3 font-semibold">Player</th>
+                            <th class="p-3 font-semibold">Position</th>
+                            <th class="p-3 font-semibold">Team</th>
+                            <th class="p-3 font-semibold text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${playersToRender.slice(0, 250).map(p => `
+                            <tr class="border-b border-slate-200 hover:bg-slate-50">
+                                <td class="p-3 font-bold text-amber-600">${Math.round(p[scoringFormat] || p.ovr)}</td>
+                                <td class="p-3 font-semibold">${p.name}</td>
+                                <td class="p-3">${p.pos || 'N/A'}</td>
+                                <td class="p-3">${p.team || 'N/A'}</td>
+                                <td class="p-3 text-center">
+                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-sm font-semibold py-1 px-3 rounded-full hover:bg-amber-200 transition-colors">✨ Analyze</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                `;
+
+                document.querySelectorAll('.analyze-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const playerId = e.target.dataset.playerId;
+                        const player = this.state.players.find(p => p.id == playerId);
+                        if (player) {
+                            this.showPlayerAnalysis(player);
+                        }
+                    });
+                });
+            },
+
+            async callGeminiAPI(prompt) {
+                const functionUrl = `/.netlify/functions/gemini`;
+                try {
+                    const response = await fetch(functionUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt })
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Gemini function failed with status ${response.status}: ${errorText}`);
+                    }
+
+                    const result = await response.json();
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts[0].text) {
+                        return result.candidates[0].content.parts[0].text;
+                    } else {
+                        if (result.candidates && result.candidates[0].finishReason === 'SAFETY') {
+                             return "The AI could not generate a response due to safety settings. Please try a different prompt.";
+                        }
+                        return "Sorry, the AI analysis could not be generated at this time.";
+                    }
+                } catch (error) {
+                    console.error("Gemini API call failed:", error);
+                    return `An error occurred while fetching the AI analysis: ${error.message}`;
+                }
+            },
+
+            async showPlayerAnalysis(player) {
+                const modal = document.getElementById('ai-modal');
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
+
+                modalTitle.textContent = `AI Analysis: ${player.name}`;
+                modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating analysis...</p></div>';
+                modal.classList.remove('hidden');
+
+                const prompt = `Provide a detailed 2025 fantasy football outlook for ${player.name} (${player.pos}, ${player.team}). Focus on their potential in a 10-team, Superflex, IDP league format. Discuss their strengths, weaknesses, potential injury risks, and overall upside for the upcoming season. Keep the analysis concise, around 100-150 words.`;
+                
+                const analysis = await this.callGeminiAPI(prompt);
+                modalBody.innerHTML = analysis.replace(/\n/g, '<br>');
+            },
+
+            async generateTeamNames() {
+                const input = document.getElementById('name-generator-input');
+                const resultsContainer = document.getElementById('name-generator-results');
+                const keywords = input.value;
+
+                if (!keywords) {
+                    resultsContainer.innerHTML = '<p class="text-red-500">Please enter some keywords to generate names.</p>';
+                    return;
+                }
+
+                resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating names...</p></div>';
+
+                const prompt = `Generate 10 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Format them as a simple list without numbers.`;
+
+                const namesText = await this.callGeminiAPI(prompt);
+                const namesArray = namesText.split('\n').filter(name => name.trim() !== '').map(name => name.replace(/^- \s*/, ''));
+                
+                resultsContainer.innerHTML = `
+                    <ul class="list-disc list-inside space-y-2">
+                        ${namesArray.map(name => `<li>${name}</li>`).join('')}
+                    </ul>
+                `;
+            },
+
+            async getRoundByRoundAdvice() {
+                const roundSelector = document.getElementById('round-selector');
+                const resultsContainer = document.getElementById('round-advice-results');
+                const selectedRound = roundSelector.value;
+
+                resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating advice...</p></div>';
+
+                const prompt = `For a 10-team, Superflex, IDP fantasy football league, provide a detailed draft strategy for ${selectedRound}. Discuss which positions to target (QB, RB, WR, TE, IDP), mention 2-3 specific player examples that are good values in this range, and explain the reasoning behind this strategy for this specific part of the draft. Format the response with clear headings for each section.`;
+
+                const advice = await this.callGeminiAPI(prompt);
+                resultsContainer.innerHTML = advice.replace(/\n/g, '<br>');
+            },
+
+            getStrategyView() {
+                return `
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold text-slate-900">Offensive Draft Strategies</h2>
+                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Your approach in the early rounds will define your team's structure. Below are the three most prominent draft architectures for 2025. Each has a different philosophy on how to handle the critical running back position and build a championship roster. Consider your own risk tolerance and drafting style when choosing your path.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
+                            <h3 class="text-2xl font-bold text-center mb-4 text-sky-700">Robust RB</h3>
+                            <p class="text-slate-600 mb-4 flex-grow">This aggressive strategy involves using your first 2-3 picks on elite, high-volume running backs. The goal is to create an overwhelming advantage at the scarcest position, accepting the injury risk for a massive weekly ceiling.</p>
+                            <div class="mt-auto">
+                                <p class="font-semibold mb-2">Ideal Targets:</p>
+                                <ul class="list-disc list-inside text-slate-700 space-y-1">
+                                    <li>Bijan Robinson</li>
+                                    <li>Jahmyr Gibbs</li>
+                                    <li>Saquon Barkley</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md border-4 border-amber-400 flex flex-col">
+                            <h3 class="text-2xl font-bold text-center mb-4 text-amber-700">Hero RB (Hybrid)</h3>
+                            <p class="text-slate-600 mb-4 flex-grow">A popular, balanced approach. You draft one elite "anchor" RB in Round 1 or 2, then pivot to drafting elite WRs, TEs, and QBs for the next several rounds. This gives you a stud RB while still capitalizing on depth at other positions.</p>
+                             <div class="mt-auto">
+                                <p class="font-semibold mb-2">Ideal Anchor RBs:</p>
+                                <ul class="list-disc list-inside text-slate-700 space-y-1">
+                                    <li>Bijan Robinson</li>
+                                    <li>Jahmyr Gibbs</li>
+                                    <li>Christian McCaffrey</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col">
+                            <h3 class="text-2xl font-bold text-center mb-4 text-emerald-700">Zero RB</h3>
+                            <p class="text-slate-600 mb-4 flex-grow">A contrarian strategy where you avoid RBs entirely for at least the first four rounds. You load up on elite WRs, TEs, and QBs to build a positional advantage, then attack the RB position in the middle rounds, targeting veterans and high-upside backups.</p>
+                             <div class="mt-auto">
+                                <p class="font-semibold mb-2">Mid-Round Targets:</p>
+                                <ul class="list-disc list-inside text-slate-700 space-y-1">
+                                    <li>James Conner</li>
+                                    <li>Kyren Williams</li>
+                                    <li>Chase Brown</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-2xl font-bold mb-4 text-slate-900">✨ AI Round-by-Round Strategy Explorer</h2>
+                        <p class="text-slate-600 mb-4">Select a stage of the draft to get targeted, AI-powered advice on who to pick and why, tailored specifically for your league's unique format.</p>
+                        <div class="flex gap-2 mb-4">
+                            <select id="round-selector" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
+                                <option value="Rounds 1-2">Rounds 1-2</option>
+                                <option value="Rounds 3-4">Rounds 3-4</option>
+                                <option value="Rounds 5-7">Rounds 5-7 (The Mid-Rounds)</option>
+                                <option value="Rounds 8-11">Rounds 8-11 (The Late-Rounds)</option>
+                                <option value="Rounds 12+">Rounds 12+ (The Sleepers)</option>
+                            </select>
+                            <button id="get-round-advice-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-md hover:bg-amber-600 transition-colors">Get Advice</button>
+                        </div>
+                        <div id="round-advice-results" class="mt-4 p-4 bg-slate-50 rounded-md min-h-[200px]">
+                            <p class="text-slate-500">Your AI-generated advice will appear here.</p>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            getIdpView() {
+                const idpTiers = {
+                    DL: this.state.players.filter(p => p.pos === 'DL').sort((a,b) => (a.ovr || 999) - (b.ovr || 999)),
+                    LB: this.state.players.filter(p => p.pos === 'LB').sort((a,b) => (a.ovr || 999) - (b.ovr || 999)),
+                    DB: this.state.players.filter(p => p.pos === 'DB').sort((a,b) => (a.ovr || 999) - (b.ovr || 999)),
+                };
+                return `
+                    <div class="text-center mb-8">
+                        <h2 class="text-3xl font-bold text-slate-900">IDP (Individual Defensive Player) Guide</h2>
+                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Success in IDP leagues requires a different approach. Do not draft IDPs early. The value lies in the middle-to-late rounds. Your primary goal is to secure an every-down, high-tackle linebacker to anchor your defense, then supplement with high-upside pass rushers and safeties.</p>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        ${['DL', 'LB', 'DB'].map(pos => `
+                            <div class="bg-white p-6 rounded-lg shadow-md">
+                                <h3 class="text-2xl font-bold mb-4 text-center">${pos === 'DL' ? 'Defensive Linemen' : (pos === 'LB' ? 'Linebackers' : 'Defensive Backs')}</h3>
+                                ${pos === 'LB' ? '<p class="text-sm text-center font-semibold text-amber-600 mb-4">THE MOST IMPORTANT IDP POSITION</p>' : ''}
+                                <p class="text-slate-600 mb-4 text-sm">
+                                    ${pos === 'DL' ? 'Focus on elite edge rushers who can get double-digit sacks.' : ''}
+                                    ${pos === 'LB' ? 'Target every-down players who rack up tackles. They are the RBs of the defense.' : ''}
+                                    ${pos === 'DB' ? 'Prioritize box safeties who play near the line of scrimmage for consistent tackle numbers.' : ''}
+                                </p>
+                                <div class="space-y-3">
+                                    <div>
+                                        <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
+                                        <ul class="text-sm text-slate-600 list-disc list-inside">
+                                            ${idpTiers[pos].slice(0, 4).map(p => `<li>${p.name}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
+                                        <ul class="text-sm text-slate-600 list-disc list-inside">
+                                             ${idpTiers[pos].slice(4, 8).map(p => `<li>${p.name}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                     <div>
+                                        <p class="font-bold text-slate-800">Late-Round Targets</p>
+                                        <ul class="text-sm text-slate-600 list-disc list-inside">
+                                            ${pos === 'DL' ? '<li>Nolan Smith Jr.</li><li>Chase Young</li>' : ''}
+                                            ${pos === 'LB' ? '<li>Tyrice Knight</li><li>Jaylon Carlies</li>' : ''}
+                                            ${pos === 'DB' ? '<li>Tykee Smith</li><li>Lathan Ransom</li>' : ''}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            },
+
+            renderCharts() {
+                Object.values(this.state.charts).forEach(chart => chart.destroy());
+                
+                if (this.state.currentView === 'dashboard') {
+                    this.renderStrategyChart();
+                }
+            },
+
+            renderStrategyChart() {
+                const ctx = document.getElementById('strategyChart')?.getContext('2d');
+                if (!ctx) return;
+
+                const data = {
+                    labels: ['Robust RB', 'Hero RB', 'Zero RB'],
+                    datasets: [{
+                        label: 'Risk Level',
+                        data: [9, 6, 7],
+                        backgroundColor: ['rgba(56, 189, 248, 0.6)', 'rgba(251, 191, 36, 0.6)', 'rgba(16, 185, 129, 0.6)'],
+                        borderColor: ['#0284c7', '#d97706', '#059669'],
+                        borderWidth: 2,
+                    }, {
+                        label: 'Upside Potential',
+                        data: [8, 9, 10],
+                        backgroundColor: ['rgba(56, 189, 248, 0.3)', 'rgba(251, 191, 36, 0.3)', 'rgba(16, 185, 129, 0.3)'],
+                        borderColor: ['#0284c7', '#d97706', '#059669'],
+                        borderWidth: 2,
+                    }]
+                };
+
+                this.state.charts.strategyChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 10,
+                                grid: { color: '#e2e8f0' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    footer: (tooltipItems) => {
+                                        const strategy = tooltipItems[0].label;
+                                        const descriptions = {
+                                            'Robust RB': 'Prioritizes RBs early to build an advantage at a scarce position.',
+                                            'Hero RB': 'Secures one elite RB, then focuses on other positions.',
+                                            'Zero RB': 'Fades RBs early to load up on elite WRs/TEs/QBs.'
+                                        };
+                                        return descriptions[strategy] || '';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => App.init());
+    </script>
+</body>
+</ht
