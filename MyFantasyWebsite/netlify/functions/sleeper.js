@@ -1,5 +1,4 @@
-// This function fetches the large player list AND the ADP rankings from Sleeper,
-// merges them, filters the data, and returns a smaller, faster payload.
+// This function fetches player data and handles cases where the primary ADP source may be offline.
 // File location: netlify/functions/sleeper.js
 
 exports.handler = async function (event) {
@@ -17,24 +16,23 @@ exports.handler = async function (event) {
       fetch(SLEEPER_ADP_URL)
     ]);
 
-    if (!playersResponse.ok || !adpResponse.ok) {
-      throw new Error(`Sleeper API request failed. Players: ${playersResponse.status}, ADP: ${adpResponse.status}`);
+    // The main player list is critical. If it fails, we cannot proceed.
+    if (!playersResponse.ok) {
+      throw new Error(`Critical Error: The main Sleeper Players API failed with status ${playersResponse.status}`);
     }
     
     const allPlayers = await playersResponse.json();
-    const adpData = await adpResponse.json();
+    let processedPlayers;
 
-    // Correctly merge the data by iterating over the keys (player IDs) of the ADP object
-    const mergedAndFilteredPlayers = Object.keys(adpData)
-      .map(playerId => {
+    // PRIMARY PATH: The preferred ADP endpoint is working.
+    if (adpResponse.ok) {
+      console.log("ADP data found. Using primary ranking source.");
+      const adpData = await adpResponse.json();
+      processedPlayers = Object.keys(adpData).map(playerId => {
         const adpInfo = adpData[playerId];
         const playerDetails = allPlayers[playerId];
-
-        if (!playerDetails || !adpInfo) {
-          return null;
-        }
+        if (!playerDetails) return null;
         
-        // Combine the data from both sources
         return {
           player_id: playerId,
           full_name: playerDetails.full_name || `${playerDetails.first_name} ${playerDetails.last_name}`,
@@ -44,12 +42,29 @@ exports.handler = async function (event) {
           adp: parseFloat(adpInfo.adp) || 999,
           adp_ppr: parseFloat(adpInfo.adp_ppr) || 999
         };
-      })
-      .filter(p => p && p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position));
+      });
+    } else {
+      // FALLBACK PATH: The ADP endpoint is down (e.g., 404 error).
+      // We will use the main player list and look for a different ranking metric, like Expert Consensus Rank (ECR).
+      console.warn(`ADP endpoint failed with status ${adpResponse.status}. Using fallback ECR rankings.`);
+      processedPlayers = Object.values(allPlayers).map(p => ({
+        player_id: p.player_id,
+        full_name: p.full_name || `${p.first_name} ${p.last_name}`,
+        position: p.position,
+        team: p.team || 'FA',
+        active: p.active,
+        // Use Expert Consensus Rank (rank_ecr) as the fallback, defaulting to 999 if that's also missing.
+        adp: p.fantasy_data?.rank_ecr || 999,
+        adp_ppr: p.fantasy_data?.rank_ecr || 999
+      }));
+    }
+
+    // Filter the final list for active players in the positions we care about.
+    const finalPlayers = processedPlayers.filter(p => p && p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position));
 
     return {
       statusCode: 200,
-      body: JSON.stringify(mergedAndFilteredPlayers),
+      body: JSON.stringify(finalPlayers),
       headers: { "Content-Type": "application/json" }
     };
 
