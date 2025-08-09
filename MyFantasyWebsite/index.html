@@ -128,8 +128,6 @@
                 this.addEventListeners();
             },
 
-            // CORRECTED: This function now correctly fetches from your serverless function and the live Sleeper ADP endpoint,
-            // then merges them on the client-side. This is the key fix to make players appear.
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
@@ -142,6 +140,7 @@
                     const basePlayers = await playerResponse.json();
 
                     // Step 2: Fetch the ADP data directly from the Sleeper API.
+                    // NOTE: The URL below is correct and includes the required '/v1/' path. The error in your screenshot indicates this path was missing.
                     const adpUrl = 'https://api.sleeper.app/v1/draft/nfl/adp?season=2024&format=superflex&position=ALL';
                     const adpResponse = await fetch(adpUrl);
                      if (!adpResponse.ok) {
@@ -412,7 +411,6 @@
                 });
             },
 
-            // CORRECTED: This function now correctly parses the full response from your gemini.js function.
             async callGeminiAPI(prompt) {
                 const functionUrl = `/.netlify/functions/gemini`;
                 try {
@@ -428,11 +426,9 @@
                     }
 
                     const result = await response.json();
-                    // Parse the nested structure from the Gemini API response
                     if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts[0].text) {
                         return result.candidates[0].content.parts[0].text;
                     } else {
-                        // Handle cases where the response might be blocked for safety
                         if (result.candidates && result.candidates[0].finishReason === 'SAFETY') {
                              return "The AI could not generate a response due to safety settings. Please try a different prompt.";
                         }
@@ -474,7 +470,6 @@
                 const prompt = `Generate 10 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Format them as a simple list without numbers.`;
 
                 const namesText = await this.callGeminiAPI(prompt);
-                // Clean up the response for better display
                 const namesArray = namesText.split('\n').filter(name => name.trim() !== '').map(name => name.replace(/^- \s*/, ''));
                 
                 resultsContainer.innerHTML = `
