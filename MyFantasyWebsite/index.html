@@ -7,23 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chosen Palette: Slate & Amber -->
-    <!-- Application Structure Plan: A single-page dashboard application designed for optimal user flow during a fantasy draft. The structure is thematic, not linear, allowing users to quickly access the information they need most.
-    1. Header: Title and main navigation.
-    2. Main Nav: Buttons to switch between major sections (Dashboard, Player Rankings, Draft Strategy, IDP Guide). This provides a clear, task-oriented flow.
-    3. Dashboard (Default View): The central hub. It features high-level summary cards for quick insights (Top Value Picks, Positional Scarcity), an interactive chart comparing draft strategies, foundational principles, and a new AI Team Name Generator powered by the Gemini API.
-    4. Player Rankings Section: A detailed, searchable, and filterable table of all players. Each player row now includes an "Analyze" button that uses the Gemini API to generate a detailed player outlook in a modal window.
-    5. Draft Strategy Section: A deep dive into the core offensive strategies. It uses a card-based layout to present "Robust RB," "Zero RB," and "Hero RB" side-by-side for easy comparison. It now also includes a "Round-by-Round Strategy Explorer" that uses the Gemini API to generate targeted advice for specific draft stages.
-    6. IDP Guide Section: Dedicated section for defensive players, mirroring the offensive player section with tiered rankings and strategic advice for DL, LB, and DB.
-    This architecture prioritizes quick access to actionable data while integrating AI-powered features to provide deeper, on-demand insights and creative assistance. -->
-    <!-- Visualization & Content Choices:
-    - Report Info: Draft Strategy Comparison. Goal: Compare frameworks. Viz/Method: Interactive Bar Chart (Chart.js). Interaction: Tooltips. Justification: Clear visual comparison.
-    - Report Info: Top Draft Value Players. Goal: Inform on market inefficiencies. Viz/Method: Dynamic HTML list. Justification: Direct, scannable information.
-    - Report Info: Detailed Player Rankings. Goal: Provide filterable player list. Viz/Method: Interactive HTML Table. Interaction: Search/filter. Justification: Essential for real-time data retrieval.
-    - NEW Gemini Feature: AI Player Analysis. Goal: Provide deep, on-demand player insights. Viz/Method: Modal window with text. Interaction: Button click on player row. Justification: Integrates AI analysis directly into the user's workflow without cluttering the main UI.
-    - NEW Gemini Feature: AI Team Name Generator. Goal: Provide a fun, creative tool. Viz/Method: Input field and results list. Interaction: Button click. Justification: A classic fantasy feature that showcases the creative text generation capabilities of the Gemini API.
-    - NEW Gemini Feature: Round-by-Round Strategy. Goal: Provide granular, stage-specific draft advice. Viz/Method: Dropdown menu and results box. Interaction: Button click. Justification: Makes the strategy section more actionable and dynamic, providing real-time advice powered by AI. -->
-    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -91,6 +74,10 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .drafted {
+            text-decoration: line-through;
+            color: #64748b; /* slate-500 */
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -116,7 +103,6 @@
         </main>
     </div>
 
-    <!-- Modal for AI Player Analysis -->
     <div id="ai-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
@@ -124,8 +110,7 @@
                 <button id="modal-close-btn" class="text-slate-500 hover:text-slate-800 text-3xl leading-none">&times;</button>
             </div>
             <div id="modal-body">
-                <!-- AI content will be injected here -->
-            </div>
+                </div>
         </div>
     </div>
 
@@ -156,15 +141,15 @@
                     const filteredData = await response.json();
                     
                     this.state.players = filteredData
-                        .filter(p => p.adp) // Only include players with an ADP value
+                        .filter(p => p.adp)
                         .map((p, index) => ({
                             id: p.player_id,
                             ovr: p.adp,
                             name: p.full_name,
                             pos: p.position,
                             team: p.team,
-                            tier: 1, // Default tier
-                            pprRk: p.adp_ppr || p.adp // Fallback to standard ADP if PPR ADP is missing
+                            isAvailable: true, // Track player availability
+                            pprRk: p.adp_ppr || p.adp
                         }))
                         .sort((a, b) => a.ovr - b.ovr);
 
@@ -236,6 +221,15 @@
                 }
             },
 
+            // --- DRAFT TRACKING LOGIC ---
+            handleDraft(playerId) {
+                const player = this.state.players.find(p => p.id == playerId);
+                if (player && player.isAvailable) {
+                    player.isAvailable = false;
+                    this.renderTable(); // Re-render the table to show the change
+                }
+            },
+
             getDashboardView() {
                 return `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -289,7 +283,7 @@
                 return `
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live from Sleeper)</h2>
-                        <p class="text-slate-600 mb-6">This is live player data from the Sleeper API. Use the filters to narrow down the rankings. Click the ✨ "Analyze" button for an AI-powered breakdown of any player's upcoming season.</p>
+                        <p class="text-slate-600 mb-6">This is live player data from the Sleeper API. Use the filters to narrow down the rankings. Click "Draft" to mark a player as taken for your league.</p>
                         <div class="flex flex-wrap gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
@@ -302,6 +296,10 @@
                                 <option value="LB">LB</option>
                                 <option value="DB">DB</option>
                             </select>
+                             <select id="statusFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="ALL">All Players</option>
+                                <option value="AVAILABLE">Available Only</option>
+                            </select>
                             <select id="scoringFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
                                 <option value="ovr">Overall Rank</option>
                                 <option value="pprRk">PPR Rank</option>
@@ -309,8 +307,7 @@
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left" id="rankingsTable">
-                                <!-- Table content will be generated by JS -->
-                            </table>
+                                </table>
                         </div>
                     </div>
                 `;
@@ -323,6 +320,7 @@
             addRankingsEventListeners() {
                 document.getElementById('searchInput').addEventListener('input', () => this.filterAndRenderTable());
                 document.getElementById('posFilter').addEventListener('change', () => this.filterAndRenderTable());
+                document.getElementById('statusFilter').addEventListener('change', () => this.filterAndRenderTable());
                 document.getElementById('scoringFilter').addEventListener('change', () => this.filterAndRenderTable());
                 this.renderTable();
             },
@@ -334,19 +332,22 @@
             filterAndRenderTable() {
                 const searchTerm = document.getElementById('searchInput').value.toLowerCase();
                 const posFilter = document.getElementById('posFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
                 
                 this.state.filteredPlayers = this.state.players.filter(p => {
                     const nameMatch = p.name.toLowerCase().includes(searchTerm);
                     const posMatch = posFilter === 'ALL' || p.pos === posFilter;
-                    return nameMatch && posMatch;
+                    const statusMatch = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' && p.isAvailable);
+                    return nameMatch && posMatch && statusMatch;
                 });
 
                 this.renderTable();
             },
 
             renderTable() {
-                const scoringFormat = document.getElementById('scoringFilter').value;
+                const scoringFormat = document.getElementById('scoringFilter')?.value || 'ovr';
                 const table = document.getElementById('rankingsTable');
+                if (!table) return;
                 
                 let sortedPlayers = [...this.state.filteredPlayers];
                 if(scoringFormat !== 'ovr') {
@@ -368,13 +369,16 @@
                     </thead>
                     <tbody>
                         ${sortedPlayers.slice(0, 250).map(p => `
-                            <tr class="border-b border-slate-200 hover:bg-slate-50">
+                            <tr class="border-b border-slate-200 hover:bg-slate-50 ${!p.isAvailable ? 'drafted' : ''}">
                                 <td class="p-3 font-bold text-amber-600">${Math.round(p[scoringFormat] || p.ovr)}</td>
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
-                                <td class="p-3 text-center">
-                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-sm font-semibold py-1 px-3 rounded-full hover:bg-amber-200 transition-colors">✨ Analyze</button>
+                                <td class="p-3 text-center space-x-2">
+                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-sm font-semibold py-1 px-3 rounded-full hover:bg-amber-200 transition-colors disabled:opacity-50"
+                                    ${!p.isAvailable ? 'disabled' : ''}>✨ Analyze</button>
+                                    <button data-player-id="${p.id}" class="draft-btn bg-emerald-500 text-white text-sm font-semibold py-1 px-3 rounded-full hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                    ${!p.isAvailable ? 'disabled' : ''}>Draft</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -386,6 +390,13 @@
                         const playerId = e.target.dataset.playerId;
                         const player = this.state.players.find(p => p.id == playerId);
                         this.showPlayerAnalysis(player);
+                    });
+                });
+
+                document.querySelectorAll('.draft-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const playerId = e.target.dataset.playerId;
+                        this.handleDraft(playerId);
                     });
                 });
             },
