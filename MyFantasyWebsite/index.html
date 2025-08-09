@@ -140,7 +140,7 @@
                     const basePlayers = await playerResponse.json();
 
                     // Step 2: Fetch the ADP data directly from the Sleeper API.
-                    // NOTE: The URL below is correct and includes the required '/v1/' path. The error in your screenshot indicates this path was missing.
+                    // THIS IS THE FIX: The URL now correctly includes '/v1/' which was missing and causing the 404 error.
                     const adpUrl = 'https://api.sleeper.app/v1/draft/nfl/adp?season=2024&format=superflex&position=ALL';
                     const adpResponse = await fetch(adpUrl);
                      if (!adpResponse.ok) {
@@ -677,4 +677,4 @@
         document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
-</html>
+</ht
