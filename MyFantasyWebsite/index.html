@@ -439,7 +439,7 @@
                 modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating analysis...</p></div>';
                 modal.classList.remove('hidden');
 
-                const prompt = `Provide a detailed 2025 fantasy football outlook for ${player.name} (${player.pos}, ${player.team}). Focus on their potential in a 10-team, Superflex, IDP league format. Discuss their strengths, weaknesses, potential injury risks, and overall upside for the upcoming season. Keep the analysis concise, around 100-150 words.`;
+                const prompt = `Generate an in-depth 2025 fantasy football player profile for ${player.name} (${player.pos}, ${player.team}), tailored for a 10-team, Superflex, IDP league. Structure the response with the following sections using clear headings: Player Summary, Strengths, Weaknesses, and 2025 Fantasy Outlook. The outlook should be detailed and not constrained by a word count. Conclude with a clear "Fantasy Recommendation" on when to target this player in a draft.`;
                 
                 const analysis = await this.callGeminiAPI(prompt);
                 modalBody.innerHTML = analysis.replace(/\n/g, '<br>');
