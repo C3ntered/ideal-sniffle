@@ -121,7 +121,11 @@
                 currentView: 'dashboard',
                 players: [],
                 filteredPlayers: [],
-                charts: {}
+                charts: {},
+                draftedPlayers: new Set(),
+                myTeam: [],
+                currentPick: 1,
+                totalPicks: 10
             },
             
             async init() {
@@ -183,6 +187,27 @@
                 closeBtn.addEventListener('click', () => {
                     modal.classList.add('hidden');
                 });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch(e.key) {
+                            case '1':
+                                e.preventDefault();
+                                this.state.currentView = 'dashboard';
+                                this.render();
+                                break;
+                            case '2':
+                                e.preventDefault();
+                                this.state.currentView = 'rankings';
+                                this.render();
+                                break;
+                            case 'Escape':
+                                e.preventDefault();
+                                modal.classList.add('hidden');
+                                break;
+                        }
+                    }
+                });
             },
             
             render() {
@@ -222,11 +247,27 @@
             },
 
             // --- DRAFT TRACKING LOGIC ---
-            handleDraft(playerId) {
+            handleDraft(playerId, isMyPick = false) {
                 const player = this.state.players.find(p => p.id == playerId);
                 if (player && player.isAvailable) {
                     player.isAvailable = false;
-                    this.renderTable(); // Re-render the table to show the change
+                    this.state.draftedPlayers.add(playerId);
+                    
+                    if (isMyPick) {
+                        this.state.myTeam.push(player);
+                    }
+                    
+                    this.state.currentPick++;
+                    this.renderTable();
+                    this.updateDraftStatus();
+                }
+            },
+
+            updateDraftStatus() {
+                const statusEl = document.getElementById('draft-status');
+                if (statusEl) {
+                    const remaining = this.state.totalPicks - this.state.currentPick + 1;
+                    statusEl.textContent = `Pick ${this.state.currentPick} | ${remaining} picks remaining`;
                 }
             },
 
@@ -241,12 +282,23 @@
                             </div>
                         </div>
                         <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold mb-4 text-slate-900">Top Value Picks (Sample)</h2>
-                            <p class="text-slate-600 mb-4">Value data (ADP vs. ECR) is not available from this API endpoint. This section shows a sample of how it would look.</p>
-                            <ul class="space-y-3">
-                                <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md"><p class="font-semibold">Sample Player 1</p><span class="text-sm font-bold text-amber-600">TARGET</span></li>
-                                <li class="flex justify-between items-center bg-slate-100 p-3 rounded-md"><p class="font-semibold">Sample Player 2</p><span class="text-sm font-bold text-amber-600">TARGET</span></li>
-                            </ul>
+                            <h2 class="text-2xl font-bold mb-4 text-slate-900">My Team</h2>
+                            <div id="my-team-display" class="space-y-2">
+                                ${this.state.myTeam.length === 0 ? 
+                                    '<p class="text-slate-500 italic">No players drafted yet</p>' : 
+                                    this.state.myTeam.map(p => `
+                                        <div class="flex justify-between items-center bg-green-50 p-2 rounded">
+                                            <span class="font-semibold">${p.name}</span>
+                                            <span class="text-sm bg-green-100 px-2 py-1 rounded">${p.pos}</span>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                            ${this.getPositionNeeds()}
+                            <div class="mt-4 text-center space-x-2">
+                                <button id="clear-team-btn" class="text-sm bg-slate-200 px-3 py-1 rounded hover:bg-slate-300">Clear Team</button>
+                                <button id="get-team-advice-btn" class="text-sm bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600">Get AI Advice</button>
+                            </div>
                         </div>
                         <div class="lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
                             <h2 class="text-2xl font-bold mb-4 text-slate-900">✨ AI Team Name Generator</h2>
@@ -282,8 +334,11 @@
             getRankingsView() {
                 return `
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h2 class="text-2xl font-bold mb-4 text-slate-900">Player Rankings (Live from Sleeper)</h2>
-                        <p class="text-slate-600 mb-6">This is live player data from the Sleeper API. Use the filters to narrow down the rankings. Click "Draft" to mark a player as taken for your league.</p>
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold text-slate-900">Player Rankings</h2>
+                            <div id="draft-status" class="text-sm font-semibold bg-amber-100 px-3 py-1 rounded">Pick 1 | 10 picks remaining</div>
+                        </div>
+                        <p class="text-slate-600 mb-6">Live data from Sleeper API. 📊=Analyze, ✓=Draft (others), MY=Draft (your team)</p>
                         <div class="flex flex-wrap gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
@@ -309,12 +364,75 @@
                             <table class="w-full text-left" id="rankingsTable">
                                 </table>
                         </div>
+                        <div class="mt-4 text-xs text-slate-500 bg-slate-50 p-2 rounded">
+                            <strong>Quick Keys:</strong> Ctrl+1 (Dashboard) • Ctrl+2 (Rankings) • Esc (Close Modal)
+                        </div>
                     </div>
                 `;
             },
 
+            getPositionNeeds() {
+                if (this.state.myTeam.length === 0) return '';
+                
+                const positionCounts = {};
+                this.state.myTeam.forEach(p => {
+                    positionCounts[p.pos] = (positionCounts[p.pos] || 0) + 1;
+                });
+
+                const needs = [];
+                const targets = { QB: 2, RB: 3, WR: 4, TE: 2, DL: 2, LB: 3, DB: 2 };
+                
+                Object.entries(targets).forEach(([pos, target]) => {
+                    const current = positionCounts[pos] || 0;
+                    if (current < target) {
+                        needs.push(`${pos}: ${current}/${target}`);
+                    }
+                });
+
+                return needs.length > 0 ? `
+                    <div class="mt-3 p-2 bg-amber-50 rounded">
+                        <p class="text-sm font-semibold text-amber-800">Position Needs:</p>
+                        <p class="text-xs text-amber-700">${needs.join(' • ')}</p>
+                    </div>
+                ` : '';
+            },
+
             addDashboardEventListeners() {
                 document.getElementById('name-generator-btn').addEventListener('click', () => this.generateTeamNames());
+                document.getElementById('clear-team-btn')?.addEventListener('click', () => {
+                    this.state.myTeam = [];
+                    this.state.draftedPlayers.clear();
+                    this.state.currentPick = 1;
+                    this.state.players.forEach(p => p.isAvailable = true);
+                    this.render();
+                });
+                document.getElementById('get-team-advice-btn')?.addEventListener('click', () => this.getTeamAdvice());
+            },
+
+            async getTeamAdvice() {
+                const modal = document.getElementById('ai-modal');
+                const modalTitle = document.getElementById('modal-title');
+                const modalBody = document.getElementById('modal-body');
+
+                modalTitle.textContent = `🧠 Team Analysis`;
+                modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Analyzing your team...</p></div>';
+                modal.classList.remove('hidden');
+
+                const currentRound = Math.ceil(this.state.currentPick / 10);
+                const myTeamInfo = this.state.myTeam.map(p => `${p.name} (${p.pos})`).join(', ');
+                
+                const prompt = `My current fantasy team: ${myTeamInfo || 'Empty'}. Round ${currentRound}, Pick ${this.state.currentPick}.
+
+Analyze my team for Superflex/IDP league:
+1. **Strengths** (what's working)
+2. **Weaknesses** (biggest needs) 
+3. **Next 3 Picks** (specific positions/types to target)
+4. **Strategy** (what to avoid, what to prioritize)
+
+Keep it under 150 words - I need quick actionable advice!`;
+                
+                const analysis = await this.callGeminiAPI(prompt);
+                modalBody.innerHTML = analysis.replace(/\n/g, '<br>');
             },
 
             addRankingsEventListeners() {
@@ -356,6 +474,8 @@
                 } else {
                     sortedPlayers.sort((a,b) => a.ovr - b.ovr);
                 }
+                
+                this.updateDraftStatus();
 
                 table.innerHTML = `
                     <thead>
@@ -374,11 +494,13 @@
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
-                                <td class="p-3 text-center space-x-2">
-                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-sm font-semibold py-1 px-3 rounded-full hover:bg-amber-200 transition-colors disabled:opacity-50"
-                                    ${!p.isAvailable ? 'disabled' : ''}>✨ Analyze</button>
-                                    <button data-player-id="${p.id}" class="draft-btn bg-emerald-500 text-white text-sm font-semibold py-1 px-3 rounded-full hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
-                                    ${!p.isAvailable ? 'disabled' : ''}>Draft</button>
+                                <td class="p-3 text-center space-x-1">
+                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-xs font-semibold py-1 px-2 rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
+                                    ${!p.isAvailable ? 'disabled' : ''}>📊</button>
+                                    <button data-player-id="${p.id}" class="draft-btn bg-emerald-500 text-white text-xs font-semibold py-1 px-2 rounded hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                    ${!p.isAvailable ? 'disabled' : ''}>✓</button>
+                                    <button data-player-id="${p.id}" class="my-draft-btn bg-blue-500 text-white text-xs font-semibold py-1 px-2 rounded hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                    ${!p.isAvailable ? 'disabled' : ''}>MY</button>
                                 </td>
                             </tr>
                         `).join('')}
@@ -396,37 +518,58 @@
                 document.querySelectorAll('.draft-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
-                        this.handleDraft(playerId);
+                        this.handleDraft(playerId, false);
+                    });
+                });
+
+                document.querySelectorAll('.my-draft-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const playerId = e.target.dataset.playerId;
+                        this.handleDraft(playerId, true);
                     });
                 });
             },
 
-            async callGeminiAPI(prompt) {
+            async callGeminiAPI(prompt, retries = 2) {
                 const functionUrl = `/.netlify/functions/gemini`; 
                 
-                try {
-                    const response = await fetch(functionUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ prompt: prompt })
-                    });
+                for (let attempt = 0; attempt <= retries; attempt++) {
+                    try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 15000);
+                        
+                        const response = await fetch(functionUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt: prompt }),
+                            signal: controller.signal
+                        });
 
-                    if (!response.ok) {
-                        throw new Error(`Serverless function failed with status ${response.status}`);
-                    }
+                        clearTimeout(timeoutId);
 
-                    const result = await response.json();
-                     if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-                        return result.candidates[0].content.parts[0].text;
-                    } else {
-                        if (result.candidates && result.candidates[0].finishReason === 'SAFETY') {
-                             return "The AI could not generate a response due to safety settings. Please try a different prompt.";
+                        if (!response.ok) {
+                            throw new Error(`API failed with status ${response.status}`);
                         }
-                        return "Sorry, the AI analysis could not be generated at this time.";
+
+                        const result = await response.json();
+                        if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                            return result.candidates[0].content.parts[0].text;
+                        } else {
+                            if (result.candidates && result.candidates[0].finishReason === 'SAFETY') {
+                                return "⚠️ Content filtered by safety settings. Try a different query.";
+                            }
+                            throw new Error("No valid response from AI");
+                        }
+                    } catch (error) {
+                        console.warn(`API attempt ${attempt + 1} failed:`, error);
+                        if (attempt === retries) {
+                            if (error.name === 'AbortError') {
+                                return "⏱️ Request timed out. Please try again with a simpler query.";
+                            }
+                            return `❌ AI analysis unavailable. Error: ${error.message}`;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
                     }
-                } catch (error) {
-                    console.error("API call failed:", error);
-                    return "An error occurred while fetching the AI analysis. Please check your browser's developer console for details.";
                 }
             },
 
@@ -435,11 +578,24 @@
                 const modalTitle = document.getElementById('modal-title');
                 const modalBody = document.getElementById('modal-body');
 
-                modalTitle.textContent = `AI Analysis: ${player.name}`;
+                modalTitle.textContent = `🎯 ${player.name} (${player.pos})`;
                 modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating analysis...</p></div>';
                 modal.classList.remove('hidden');
 
-                const prompt = `Generate an in-depth 2025 fantasy football player profile for ${player.name} (${player.pos}, ${player.team}), tailored for a 10-team, Superflex, IDP league. Structure the response with the following sections using clear headings: Player Summary, Strengths, Weaknesses, and 2025 Fantasy Outlook. The outlook should be detailed and not constrained by a word count. Conclude with a clear "Fantasy Recommendation" on when to target this player in a draft.`;
+                const currentRound = Math.ceil(this.state.currentPick / 10);
+                const myTeamPositions = this.state.myTeam.map(p => p.pos).join(', ');
+                
+                const prompt = `DRAFT SITUATION: Round ${currentRound}, Pick ${this.state.currentPick}. My current team: ${myTeamPositions || 'Empty'}.
+
+Provide a CONCISE fantasy analysis for ${player.name} (${player.pos}, ${player.team}) for 2025 in a 10-team Superflex/IDP league:
+
+1. **Draft Value** (1-2 sentences): Is this player worth drafting NOW at pick ${this.state.currentPick}?
+2. **Key Strengths** (2-3 bullet points)
+3. **Concerns** (1-2 bullet points)
+4. **2025 Outlook** (2-3 sentences)
+5. **RECOMMENDATION**: Draft now, wait X rounds, or avoid? Consider my team needs.
+
+Keep it under 150 words - I need quick decisions during draft!`;
                 
                 const analysis = await this.callGeminiAPI(prompt);
                 modalBody.innerHTML = analysis.replace(/\n/g, '<br>');
@@ -457,15 +613,15 @@
 
                 resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating names...</p></div>';
 
-                const prompt = `Generate 10 creative, clever, and funny fantasy football team names based on these keywords: "${keywords}". Include some puns related to current or famous NFL players.`;
+                const prompt = `Generate 8 creative fantasy football team names using: "${keywords}". Make them punny, clever, and NFL-related. Format as a simple numbered list.`;
 
                 const namesText = await this.callGeminiAPI(prompt);
-                const namesArray = namesText.split('\n').filter(name => name.trim() !== '');
+                const namesArray = namesText.split('\n').filter(name => name.trim() !== '').slice(0, 8);
                 
                 resultsContainer.innerHTML = `
-                    <ul class="list-disc list-inside space-y-2">
-                        ${namesArray.map(name => `<li>${name.replace(/^\d+\.\s*/, '')}</li>`).join('')}
-                    </ul>
+                    <div class="grid grid-cols-2 gap-2">
+                        ${namesArray.map(name => `<div class="bg-amber-50 p-2 rounded text-sm">${name.replace(/^\d+\.\s*/, '')}</div>`).join('')}
+                    </div>
                 `;
             },
 
@@ -473,10 +629,19 @@
                 const roundSelector = document.getElementById('round-selector');
                 const resultsContainer = document.getElementById('round-advice-results');
                 const selectedRound = roundSelector.value;
+                const myTeamPositions = this.state.myTeam.map(p => p.pos).join(', ');
 
                 resultsContainer.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating advice...</p></div>';
 
-                const prompt = `For a 10-team, Superflex, IDP fantasy football league, provide a detailed draft strategy for ${selectedRound}. Discuss which positions to target (QB, RB, WR, TE, IDP), mention 2-3 specific player examples that are good values in this range, and explain the reasoning behind this strategy for this specific part of the draft. Format the response with clear headings for each section.`;
+                const prompt = `DRAFT CONTEXT: 10-team Superflex/IDP league. My current team: ${myTeamPositions || 'Empty'}.
+
+For ${selectedRound}, provide:
+1. **Primary Targets** (positions to prioritize)
+2. **Top 3 Players** to target in this range
+3. **Strategy** (2-3 sentences)
+4. **Avoid** (what NOT to do)
+
+Keep it concise - I need quick actionable advice!`;
 
                 const advice = await this.callGeminiAPI(prompt);
                 resultsContainer.innerHTML = advice.replace(/\n/g, '<br>');
