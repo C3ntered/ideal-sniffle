@@ -60,7 +60,7 @@ exports.handler = async function (event) {
     }
 
     // Filter the final list for active players in the positions we care about.
-    const finalPlayers = processedPlayers.filter(p => p && p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].includes(p.position));
+    const finalPlayers = processedPlayers.filter(p => p && p.active && p.position && ['QB', 'RB', 'WR', 'TE', 'K', 'DEF', 'DL', 'LB', 'DB'].includes(p.position));
 
     return {
       statusCode: 200,
