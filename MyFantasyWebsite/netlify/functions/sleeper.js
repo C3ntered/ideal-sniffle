@@ -40,7 +40,8 @@ exports.handler = async function (event) {
           team: playerDetails.team || 'FA',
           active: playerDetails.active,
           adp: parseFloat(adpInfo.adp) || 999,
-          adp_ppr: parseFloat(adpInfo.adp_ppr) || 999
+          adp_ppr: parseFloat(adpInfo.adp_ppr) || 999,
+          bye_week: playerDetails.bye_week || null
         };
       });
     } else {
@@ -55,7 +56,8 @@ exports.handler = async function (event) {
         active: p.active,
         // Use Expert Consensus Rank (rank_ecr) as the fallback, defaulting to 999 if that's also missing.
         adp: p.fantasy_data?.rank_ecr || 999,
-        adp_ppr: p.fantasy_data?.rank_ecr || 999
+        adp_ppr: p.fantasy_data?.rank_ecr || 999,
+        bye_week: p.bye_week || null
       }));
     }
 
