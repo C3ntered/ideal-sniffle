@@ -238,7 +238,7 @@
             presets: {
                 'standard': { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, FLEX: 1, SF: 0, DL: 0, LB: 0, DB: 0 },
                 'superflex': { QB: 3, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, FLEX: 1, SF: 1, DL: 0, LB: 0, DB: 0 },
-                'superflex-idp': { QB: 2, RB: 3, WR: 4, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 3, DB: 2 },
+                'superflex-idp': { QB: 2, RB: 4, WR: 5, TE: 2, K: 0, DST: 0, FLEX: 3, SF: 1, DL: 1, LB: 1, DB: 1 },
                 'deep-idp': { QB: 2, RB: 4, WR: 5, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 4, DB: 3 }
             },
             
@@ -543,7 +543,7 @@
                 modal.classList.remove('hidden');
 
                 const totalPicks = this.getTotalPicks();
-                const myTeamInfo = this.state.myTeam.map(p => `${p.name} (${p.pos})`).join(', ');
+                const myTeamInfo = this.state.myTeam.map(p => `${p.name} (${p.pos}, Bye ${p.bye_week || 'TBD'})`).join(', ');
                 
                 const prompt = `My current fantasy team: ${myTeamInfo || 'Empty'}. Picks made: ${this.state.myPickCount}/${totalPicks}.
 
@@ -756,6 +756,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                             <th class="p-3 font-semibold">Player</th>
                             <th class="p-3 font-semibold">Position</th>
                             <th class="p-3 font-semibold">Team</th>
+                            <th class="p-3 font-semibold">Bye</th>
                             <th class="p-3 font-semibold text-center">Actions</th>
                         </tr>
                     </thead>
@@ -766,6 +767,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
+                                <td class="p-3 text-center">${p.bye_week || '-'}</td>
                                 <td class="p-3 text-center space-x-1">
                                     <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-xs font-semibold py-1 px-2 rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
                                     ${!p.isAvailable ? 'disabled' : ''}>📊</button>
@@ -859,7 +861,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                 
                 const prompt = `DRAFT SITUATION: ${this.state.myPickCount}/${totalPicks} picks made. My current team: ${myTeamPositions || 'Empty'}.
 
-Provide a CONCISE fantasy analysis for ${player.name} (${player.pos}, ${player.team}) for 2025 in a 10-team Superflex/IDP league:
+Provide a CONCISE fantasy analysis for ${player.name} (${player.pos}, ${player.team}, Bye Week ${player.bye_week || 'TBD'}) for 2025 in a 10-team Superflex/IDP league:
 
 1. **Draft Value** (1-2 sentences): Is this player worth drafting NOW (pick ${this.state.myPickCount + 1})?
 2. **Key Strengths** (2-3 bullet points)
@@ -1074,15 +1076,15 @@ Keep it concise - I need quick actionable advice!`;
                                 <div class="space-y-3">
                                     <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="standard">
                                         <div class="font-semibold">Standard (15 players)</div>
-                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), K(1), DST(1) + 6 Bench</div>
+                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), K(1), DST(1) + 7 Bench</div>
                                     </button>
                                     <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="superflex">
                                         <div class="font-semibold">Superflex (16 players)</div>
-                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1) + 6 Bench</div>
+                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1) + 7 Bench</div>
                                     </button>
                                     <button class="preset-btn w-full text-left p-4 bg-amber-100 rounded-lg hover:bg-amber-200 border-2 border-amber-300 transition-colors" data-preset="superflex-idp">
-                                        <div class="font-semibold">Superflex + IDP (Current)</div>
-                                        <div class="text-sm text-slate-600 mt-1">QB(2), RB(3), WR(4), TE(2), DL(2), LB(3), DB(2)</div>
+                                        <div class="font-semibold">Superflex + IDP (18 players)</div>
+                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(1), WR(2), TE(1), Flex(3), SF(1), DL(1), LB(1), DB(1) + 7 Bench</div>
                                     </button>
                                     <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="deep-idp">
                                         <div class="font-semibold">Deep IDP (18-player)</div>
