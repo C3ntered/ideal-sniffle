@@ -8,9 +8,34 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e2e8f0;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #475569;
+            --border-color: #cbd5e1;
+            --amber-500: #f59e0b;
+            --amber-100: #fef3c7;
+        }
+
+        .dark {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --text-tertiary: #94a3b8;
+            --border-color: #475569;
+            --amber-100: #451a03;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc; /* slate-50 */
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         .chart-container {
             position: relative;
@@ -54,7 +79,7 @@
             z-index: 1000;
         }
         .modal-content {
-            background-color: white;
+            background-color: var(--bg-secondary);
             padding: 2rem;
             border-radius: 0.5rem;
             max-width: 500px;
@@ -62,6 +87,18 @@
             max-height: 80vh;
             overflow-y: auto;
         }
+        
+        .bg-white { background-color: var(--bg-secondary) !important; }
+        .bg-slate-50 { background-color: var(--bg-primary) !important; }
+        .bg-slate-100 { background-color: var(--bg-tertiary) !important; }
+        .bg-slate-200 { background-color: var(--bg-tertiary) !important; }
+        .text-slate-900 { color: var(--text-primary) !important; }
+        .text-slate-800 { color: var(--text-primary) !important; }
+        .text-slate-700 { color: var(--text-tertiary) !important; }
+        .text-slate-600 { color: var(--text-secondary) !important; }
+        .text-slate-500 { color: var(--text-secondary) !important; }
+        .border-slate-300 { border-color: var(--border-color) !important; }
+        .border-slate-200 { border-color: var(--border-color) !important; }
         .spinner {
             border: 4px solid rgba(0, 0, 0, 0.1);
             width: 36px;
@@ -127,12 +164,12 @@
                         <h3 class="text-lg font-semibold mb-3 text-slate-800">League Format Presets</h3>
                         <div class="space-y-2">
                             <button class="preset-btn w-full text-left p-3 bg-slate-100 rounded hover:bg-slate-200" data-preset="standard">
-                                <div class="font-semibold">Standard (10-team)</div>
-                                <div class="text-sm text-slate-600">QB(1), RB(2), WR(2), TE(1), Flex(1), K(1), DST(1)</div>
+                                <div class="font-semibold">Standard (15 players)</div>
+                                <div class="text-sm text-slate-600">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), K(1), DST(1) + 6 Bench</div>
                             </button>
                             <button class="preset-btn w-full text-left p-3 bg-slate-100 rounded hover:bg-slate-200" data-preset="superflex">
-                                <div class="font-semibold">Superflex (10-team)</div>
-                                <div class="text-sm text-slate-600">QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1)</div>
+                                <div class="font-semibold">Superflex (16 players)</div>
+                                <div class="text-sm text-slate-600">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1) + 6 Bench</div>
                             </button>
                             <button class="preset-btn w-full text-left p-3 bg-amber-100 rounded hover:bg-amber-200 border-2 border-amber-300" data-preset="superflex-idp">
                                 <div class="font-semibold">Superflex + IDP (Current)</div>
@@ -146,6 +183,7 @@
                     </div>
                     <div>
                         <h3 class="text-lg font-semibold mb-3 text-slate-800">Custom Roster Targets</h3>
+                        <p class="text-sm text-slate-600 mb-3 italic">Note: These numbers include starters + bench for each position</p>
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Quarterbacks</label>
@@ -162,6 +200,22 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Tight Ends</label>
                                 <input type="number" id="te-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="4" value="2">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Flex (RB/WR/TE)</label>
+                                <input type="number" id="flex-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="3" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Superflex (QB/RB/WR/TE)</label>
+                                <input type="number" id="sf-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Kickers</label>
+                                <input type="number" id="k-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Defense/ST</label>
+                                <input type="number" id="dst-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Defensive Line</label>
@@ -182,6 +236,16 @@
                         </div>
                     </div>
                 </div>
+                <div class="mt-6 pt-6 border-t border-slate-300">
+                    <h3 class="text-lg font-semibold mb-3 text-slate-800">Appearance</h3>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-700">Dark Mode</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -198,19 +262,21 @@
                 myTeam: [],
                 myPickCount: 0,
                 leagueSettings: {
-                    QB: 2, RB: 3, WR: 4, TE: 2, DL: 2, LB: 3, DB: 2
-                }
+                    QB: 2, RB: 3, WR: 4, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 3, DB: 2
+                },
+                darkMode: false
             },
 
             presets: {
-                'standard': { QB: 1, RB: 2, WR: 2, TE: 1, DL: 0, LB: 0, DB: 0 },
-                'superflex': { QB: 2, RB: 2, WR: 2, TE: 1, DL: 0, LB: 0, DB: 0 },
-                'superflex-idp': { QB: 2, RB: 3, WR: 4, TE: 2, DL: 2, LB: 3, DB: 2 },
-                'deep-idp': { QB: 2, RB: 4, WR: 5, TE: 2, DL: 2, LB: 4, DB: 3 }
+                'standard': { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, FLEX: 1, SF: 0, DL: 0, LB: 0, DB: 0 },
+                'superflex': { QB: 3, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, FLEX: 1, SF: 1, DL: 0, LB: 0, DB: 0 },
+                'superflex-idp': { QB: 2, RB: 3, WR: 4, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 3, DB: 2 },
+                'deep-idp': { QB: 2, RB: 4, WR: 5, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 4, DB: 3 }
             },
             
             async init() {
                 this.loadSavedSettings();
+                this.initDarkMode();
                 await this.fetchData();
                 this.render();
                 this.addEventListeners();
@@ -448,14 +514,7 @@
                         <div class="flex flex-wrap gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
-                                <option value="ALL">All Positions</option>
-                                <option value="QB">QB</option>
-                                <option value="RB">RB</option>
-                                <option value="WR">WR</option>
-                                <option value="TE">TE</option>
-                                <option value="DL">DL</option>
-                                <option value="LB">LB</option>
-                                <option value="DB">DB</option>
+                                ${this.getPositionFilterOptions()}
                             </select>
                              <select id="statusFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
                                 <option value="ALL">All Players</option>
@@ -556,6 +615,9 @@ Keep it under 150 words - I need quick actionable advice!`;
                     const input = document.getElementById(`${pos.toLowerCase()}-target`);
                     if (input) input.value = value;
                 });
+                
+                const darkModeToggle = document.getElementById('dark-mode-toggle');
+                if (darkModeToggle) darkModeToggle.checked = this.state.darkMode;
             },
 
             addSettingsEventListeners() {
@@ -572,6 +634,10 @@ Keep it under 150 words - I need quick actionable advice!`;
 
                 document.getElementById('reset-settings-btn').addEventListener('click', () => {
                     this.loadPreset('superflex-idp');
+                });
+
+                document.getElementById('dark-mode-toggle').addEventListener('change', (e) => {
+                    this.toggleDarkMode();
                 });
             },
 
@@ -596,7 +662,7 @@ Keep it under 150 words - I need quick actionable advice!`;
 
             saveSettings() {
                 const newSettings = {};
-                ['QB', 'RB', 'WR', 'TE', 'DL', 'LB', 'DB'].forEach(pos => {
+                ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SF', 'K', 'DST', 'DL', 'LB', 'DB'].forEach(pos => {
                     const input = document.getElementById(`${pos.toLowerCase()}-target`);
                     newSettings[pos] = parseInt(input.value) || 0;
                 });
@@ -627,6 +693,65 @@ Keep it under 150 words - I need quick actionable advice!`;
                 if (saved) {
                     this.state.leagueSettings = JSON.parse(saved);
                 }
+                
+                const darkMode = localStorage.getItem('fantasyDarkMode');
+                if (darkMode) {
+                    this.state.darkMode = JSON.parse(darkMode);
+                }
+            },
+
+            initDarkMode() {
+                if (this.state.darkMode) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            },
+
+            toggleDarkMode() {
+                this.state.darkMode = !this.state.darkMode;
+                localStorage.setItem('fantasyDarkMode', JSON.stringify(this.state.darkMode));
+                this.initDarkMode();
+            },
+
+            getActivePositions() {
+                return Object.entries(this.state.leagueSettings)
+                    .filter(([pos, count]) => count > 0)
+                    .map(([pos]) => pos);
+            },
+
+            getPositionFilterOptions() {
+                const activePositions = this.getActivePositions();
+                const positionNames = {
+                    'QB': 'QB', 'RB': 'RB', 'WR': 'WR', 'TE': 'TE', 
+                    'K': 'K', 'DST': 'DEF', 'DL': 'DL', 'LB': 'LB', 'DB': 'DB'
+                };
+                
+                let options = '<option value="ALL">All Positions</option>';
+                
+                // Add standard positions first
+                ['QB', 'RB', 'WR', 'TE'].forEach(pos => {
+                    if (activePositions.includes(pos)) {
+                        options += `<option value="${pos}">${pos}</option>`;
+                    }
+                });
+                
+                // Add special positions
+                ['K', 'DST'].forEach(pos => {
+                    if (activePositions.includes(pos)) {
+                        const displayPos = pos === 'DST' ? 'DEF' : pos;
+                        options += `<option value="${displayPos}">${displayPos}</option>`;
+                    }
+                });
+                
+                // Add IDP positions
+                ['DL', 'LB', 'DB'].forEach(pos => {
+                    if (activePositions.includes(pos)) {
+                        options += `<option value="${pos}">${pos}</option>`;
+                    }
+                });
+                
+                return options;
             },
 
             addRankingsEventListeners() {
@@ -907,27 +1032,55 @@ Keep it concise - I need quick actionable advice!`;
             },
             
             getIdpView() {
-                const idpTiers = {
+                const activePositions = this.getActivePositions();
+                const allTiers = {
                     DL: this.state.players.filter(p => p.pos === 'DL').sort((a,b) => a.ovr - b.ovr),
                     LB: this.state.players.filter(p => p.pos === 'LB').sort((a,b) => a.ovr - b.ovr),
                     DB: this.state.players.filter(p => p.pos === 'DB').sort((a,b) => a.ovr - b.ovr),
+                    K: this.state.players.filter(p => p.pos === 'K').sort((a,b) => a.ovr - b.ovr),
+                    DEF: this.state.players.filter(p => p.pos === 'DEF').sort((a,b) => a.ovr - b.ovr),
                 };
+                
+                // Only include positions that are active in league settings
+                const idpTiers = {};
+                Object.keys(allTiers).forEach(pos => {
+                    if (activePositions.includes(pos) || activePositions.includes('DST') && pos === 'DEF') {
+                        idpTiers[pos] = allTiers[pos];
+                    }
+                });
+                if (Object.keys(idpTiers).length === 0) {
+                    return `
+                        <div class="text-center">
+                            <h2 class="text-3xl font-bold text-slate-900 mb-4">Defense, Kickers & IDP Guide</h2>
+                            <div class="bg-slate-100 p-8 rounded-lg">
+                                <p class="text-slate-600">No defensive positions configured in your league settings.</p>
+                                <p class="text-slate-500 text-sm mt-2">Add K, DST, DL, LB, or DB positions in Settings to see guidance.</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
                 return `
                     <div class="text-center mb-8">
-                        <h2 class="text-3xl font-bold text-slate-900">IDP (Individual Defensive Player) Guide</h2>
-                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Success in IDP leagues requires a different approach. Do not draft IDPs early. The value lies in the middle-to-late rounds. Your primary goal is to secure an every-down, high-tackle linebacker to anchor your defense, then supplement with high-upside pass rushers and safeties.</p>
+                        <h2 class="text-3xl font-bold text-slate-900">Defense, Kickers & IDP Guide</h2>
+                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Draft strategy for defensive positions varies by league format. Standard leagues need K/DEF in late rounds, while IDP leagues require individual defensive players with different approaches for each position.</p>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        ${['DL', 'LB', 'DB'].map(pos => `
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${Object.keys(idpTiers).map(pos => {
+                            const positionInfo = {
+                                'DL': { name: 'Defensive Linemen', desc: 'Focus on elite edge rushers who can get double-digit sacks.', important: false },
+                                'LB': { name: 'Linebackers', desc: 'Target every-down players who rack up tackles. They are the RBs of the defense.', important: true },
+                                'DB': { name: 'Defensive Backs', desc: 'Prioritize box safeties who play near the line of scrimmage for consistent tackle numbers.', important: false },
+                                'K': { name: 'Kickers', desc: 'Wait until final rounds. Target kickers on high-scoring offenses and dome teams.', important: false },
+                                'DEF': { name: 'Team Defense', desc: 'Stream defenses based on matchups. Target teams facing turnover-prone QBs.', important: false }
+                            };
+                            return `
                             <div class="bg-white p-6 rounded-lg shadow-md">
-                                <h3 class="text-2xl font-bold mb-4 text-center">${pos === 'DL' ? 'Defensive Linemen' : (pos === 'LB' ? 'Linebackers' : 'Defensive Backs')}</h3>
-                                ${pos === 'LB' ? '<p class="text-sm text-center font-semibold text-amber-600 mb-4">THE MOST IMPORTANT IDP POSITION</p>' : ''}
-                                <p class="text-slate-600 mb-4 text-sm">
-                                    ${pos === 'DL' ? 'Focus on elite edge rushers who can get double-digit sacks.' : ''}
-                                    ${pos === 'LB' ? 'Target every-down players who rack up tackles. They are the RBs of the defense.' : ''}
-                                    ${pos === 'DB' ? 'Prioritize box safeties who play near the line of scrimmage for consistent tackle numbers.' : ''}
-                                </p>
+                                <h3 class="text-2xl font-bold mb-4 text-center">${positionInfo[pos].name}</h3>
+                                ${positionInfo[pos].important ? '<p class="text-sm text-center font-semibold text-amber-600 mb-4">THE MOST IMPORTANT IDP POSITION</p>' : ''}
+                                <p class="text-slate-600 mb-4 text-sm">${positionInfo[pos].desc}</p>
                                 <div class="space-y-3">
+                                    ${idpTiers[pos].length > 0 ? `
                                     <div>
                                         <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
                                         <ul class="text-sm text-slate-600 list-disc list-inside">
@@ -940,17 +1093,20 @@ Keep it concise - I need quick actionable advice!`;
                                              ${idpTiers[pos].slice(4, 8).map(p => `<li>${p.name}</li>`).join('')}
                                         </ul>
                                     </div>
-                                     <div>
-                                        <p class="font-bold text-slate-800">Late-Round Targets</p>
+                                    ` : `
+                                    <div>
+                                        <p class="font-bold text-slate-800">Top Targets</p>
                                         <ul class="text-sm text-slate-600 list-disc list-inside">
+                                            ${pos === 'K' ? '<li>Justin Tucker</li><li>Harrison Butker</li><li>Tyler Bass</li>' : ''}
+                                            ${pos === 'DEF' ? '<li>San Francisco 49ers</li><li>Dallas Cowboys</li><li>Buffalo Bills</li>' : ''}
                                             ${pos === 'DL' ? '<li>Nolan Smith Jr.</li><li>Chase Young</li>' : ''}
                                             ${pos === 'LB' ? '<li>Tyrice Knight</li><li>Jaylon Carlies</li>' : ''}
                                             ${pos === 'DB' ? '<li>Tykee Smith</li><li>Lathan Ransom</li>' : ''}
                                         </ul>
-                                    </div>
+                                    </div>`}
                                 </div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 `;
             },
