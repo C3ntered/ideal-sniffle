@@ -196,8 +196,7 @@
                 charts: {},
                 draftedPlayers: new Set(),
                 myTeam: [],
-                currentPick: 1,
-                totalPicks: 10,
+                myPickCount: 0,
                 leagueSettings: {
                     QB: 2, RB: 3, WR: 4, TE: 2, DL: 2, LB: 3, DB: 2
                 }
@@ -349,6 +348,10 @@
             },
 
             // --- DRAFT TRACKING LOGIC ---
+            getTotalPicks() {
+                return Object.values(this.state.leagueSettings).reduce((sum, count) => sum + count, 0);
+            },
+
             handleDraft(playerId, isMyPick = false) {
                 const player = this.state.players.find(p => p.id == playerId);
                 if (player && player.isAvailable) {
@@ -357,9 +360,9 @@
                     
                     if (isMyPick) {
                         this.state.myTeam.push(player);
+                        this.state.myPickCount++;
                     }
                     
-                    this.state.currentPick++;
                     this.renderTable();
                     this.updateDraftStatus();
                 }
@@ -368,8 +371,9 @@
             updateDraftStatus() {
                 const statusEl = document.getElementById('draft-status');
                 if (statusEl) {
-                    const remaining = this.state.totalPicks - this.state.currentPick + 1;
-                    statusEl.textContent = `Pick ${this.state.currentPick} | ${remaining} picks remaining`;
+                    const totalPicks = this.getTotalPicks();
+                    const remaining = totalPicks - this.state.myPickCount;
+                    statusEl.textContent = `My Picks: ${this.state.myPickCount}/${totalPicks} | ${remaining} remaining`;
                 }
             },
 
@@ -438,7 +442,7 @@
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <div class="flex justify-between items-center mb-4">
                             <h2 class="text-2xl font-bold text-slate-900">Player Rankings</h2>
-                            <div id="draft-status" class="text-sm font-semibold bg-amber-100 px-3 py-1 rounded">Pick 1 | 10 picks remaining</div>
+                            <div id="draft-status" class="text-sm font-semibold bg-amber-100 px-3 py-1 rounded">My Picks: 0/${this.getTotalPicks()} | ${this.getTotalPicks()} remaining</div>
                         </div>
                         <p class="text-slate-600 mb-6">Live data from Sleeper API. 📊=Analyze, ✓=Draft (others), MY=Draft (your team)</p>
                         <div class="flex flex-wrap gap-4 mb-4">
@@ -506,7 +510,7 @@
                 document.getElementById('clear-team-btn')?.addEventListener('click', () => {
                     this.state.myTeam = [];
                     this.state.draftedPlayers.clear();
-                    this.state.currentPick = 1;
+                    this.state.myPickCount = 0;
                     this.state.players.forEach(p => p.isAvailable = true);
                     this.render();
                 });
@@ -522,10 +526,10 @@
                 modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Analyzing your team...</p></div>';
                 modal.classList.remove('hidden');
 
-                const currentRound = Math.ceil(this.state.currentPick / 10);
+                const totalPicks = this.getTotalPicks();
                 const myTeamInfo = this.state.myTeam.map(p => `${p.name} (${p.pos})`).join(', ');
                 
-                const prompt = `My current fantasy team: ${myTeamInfo || 'Empty'}. Round ${currentRound}, Pick ${this.state.currentPick}.
+                const prompt = `My current fantasy team: ${myTeamInfo || 'Empty'}. Picks made: ${this.state.myPickCount}/${totalPicks}.
 
 Analyze my team for Superflex/IDP league:
 1. **Strengths** (what's working)
@@ -602,6 +606,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                 
                 document.getElementById('settings-modal').classList.add('hidden');
                 this.render();
+                this.updateDraftStatus();
                 
                 this.showNotification('Settings saved successfully!');
             },
@@ -771,14 +776,14 @@ Keep it under 150 words - I need quick actionable advice!`;
                 modalBody.innerHTML = '<div class="flex justify-center items-center"><div class="spinner"></div><p class="ml-4">Generating analysis...</p></div>';
                 modal.classList.remove('hidden');
 
-                const currentRound = Math.ceil(this.state.currentPick / 10);
+                const totalPicks = this.getTotalPicks();
                 const myTeamPositions = this.state.myTeam.map(p => p.pos).join(', ');
                 
-                const prompt = `DRAFT SITUATION: Round ${currentRound}, Pick ${this.state.currentPick}. My current team: ${myTeamPositions || 'Empty'}.
+                const prompt = `DRAFT SITUATION: ${this.state.myPickCount}/${totalPicks} picks made. My current team: ${myTeamPositions || 'Empty'}.
 
 Provide a CONCISE fantasy analysis for ${player.name} (${player.pos}, ${player.team}) for 2025 in a 10-team Superflex/IDP league:
 
-1. **Draft Value** (1-2 sentences): Is this player worth drafting NOW at pick ${this.state.currentPick}?
+1. **Draft Value** (1-2 sentences): Is this player worth drafting NOW (pick ${this.state.myPickCount + 1})?
 2. **Key Strengths** (2-3 bullet points)
 3. **Concerns** (1-2 bullet points)
 4. **2025 Outlook** (2-3 sentences)
