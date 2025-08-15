@@ -195,7 +195,7 @@
             <button data-view="rankings" class="nav-btn text-slate-700 font-semibold py-2 px-2 md:px-4 rounded-md text-sm md:text-base">Rankings</button>
             <button data-view="strategy" class="nav-btn text-slate-700 font-semibold py-2 px-2 md:px-4 rounded-md text-sm md:text-base">Strategy</button>
             <button data-view="idp" class="nav-btn text-slate-700 font-semibold py-2 px-2 md:px-4 rounded-md text-sm md:text-base">Defense</button>
-            <button id="settings-btn" class="text-slate-700 font-semibold py-2 px-2 md:px-4 rounded-md hover:bg-slate-300 text-sm md:text-base">⚙️</button>
+            <button data-view="settings" class="nav-btn text-slate-700 font-semibold py-2 px-2 md:px-4 rounded-md text-sm md:text-base">Settings</button>
         </nav>
 
         <main id="main-content">
@@ -217,103 +217,6 @@
         </div>
     </div>
 
-    <div id="settings-modal" class="modal-overlay hidden">
-        <div class="modal-content max-w-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-slate-900">⚙️ League Settings</h2>
-                <button id="settings-close-btn" class="text-slate-500 hover:text-slate-800 text-3xl leading-none">&times;</button>
-            </div>
-            <div id="settings-body">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 class="text-lg font-semibold mb-3 text-slate-800">League Format Presets</h3>
-                        <div class="space-y-2">
-                            <button class="preset-btn w-full text-left p-3 bg-slate-100 rounded hover:bg-slate-200" data-preset="standard">
-                                <div class="font-semibold">Standard (15 players)</div>
-                                <div class="text-sm text-slate-600">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), K(1), DST(1) + 6 Bench</div>
-                            </button>
-                            <button class="preset-btn w-full text-left p-3 bg-slate-100 rounded hover:bg-slate-200" data-preset="superflex">
-                                <div class="font-semibold">Superflex (16 players)</div>
-                                <div class="text-sm text-slate-600">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1) + 6 Bench</div>
-                            </button>
-                            <button class="preset-btn w-full text-left p-3 bg-amber-100 rounded hover:bg-amber-200 border-2 border-amber-300" data-preset="superflex-idp">
-                                <div class="font-semibold">Superflex + IDP (Current)</div>
-                                <div class="text-sm text-slate-600">QB(2), RB(3), WR(4), TE(2), DL(2), LB(3), DB(2)</div>
-                            </button>
-                            <button class="preset-btn w-full text-left p-3 bg-slate-100 rounded hover:bg-slate-200" data-preset="deep-idp">
-                                <div class="font-semibold">Deep IDP (18-player)</div>
-                                <div class="text-sm text-slate-600">QB(2), RB(4), WR(5), TE(2), DL(2), LB(4), DB(3)</div>
-                            </button>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-semibold mb-3 text-slate-800">Custom Roster Targets</h3>
-                        <p class="text-sm text-slate-600 mb-3 italic">Note: These numbers include starters + bench for each position</p>
-                        <div class="space-y-3">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Quarterbacks</label>
-                                <input type="number" id="qb-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Running Backs</label>
-                                <input type="number" id="rb-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="8" value="3">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Wide Receivers</label>
-                                <input type="number" id="wr-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="8" value="4">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Tight Ends</label>
-                                <input type="number" id="te-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="4" value="2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Flex (RB/WR/TE)</label>
-                                <input type="number" id="flex-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="3" value="0">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Superflex (QB/RB/WR/TE)</label>
-                                <input type="number" id="sf-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Kickers</label>
-                                <input type="number" id="k-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Defense/ST</label>
-                                <input type="number" id="dst-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Defensive Line</label>
-                                <input type="number" id="dl-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Linebackers</label>
-                                <input type="number" id="lb-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="6" value="3">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1">Defensive Backs</label>
-                                <input type="number" id="db-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
-                            </div>
-                        </div>
-                        <div class="mt-4 space-x-2">
-                            <button id="save-settings-btn" class="bg-amber-500 text-white px-4 py-2 rounded hover:bg-amber-600">Save Settings</button>
-                            <button id="reset-settings-btn" class="bg-slate-300 text-slate-700 px-4 py-2 rounded hover:bg-slate-400">Reset</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-6 pt-6 border-t border-slate-300">
-                    <h3 class="text-lg font-semibold mb-3 text-slate-800">Appearance</h3>
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-700">Dark Mode</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
 
     <script>
@@ -401,23 +304,6 @@
                     modal.classList.add('hidden');
                 });
 
-                const settingsModal = document.getElementById('settings-modal');
-                const settingsBtn = document.getElementById('settings-btn');
-                const settingsCloseBtn = document.getElementById('settings-close-btn');
-                
-                settingsBtn.addEventListener('click', () => {
-                    this.showSettings();
-                });
-                
-                settingsCloseBtn.addEventListener('click', () => {
-                    settingsModal.classList.add('hidden');
-                });
-                
-                settingsModal.addEventListener('click', (e) => {
-                    if (e.target === settingsModal) {
-                        settingsModal.classList.add('hidden');
-                    }
-                });
 
                 document.addEventListener('keydown', (e) => {
                     if (e.ctrlKey || e.metaKey) {
@@ -435,7 +321,6 @@
                             case 'Escape':
                                 e.preventDefault();
                                 modal.classList.add('hidden');
-                                settingsModal.classList.add('hidden');
                                 break;
                         }
                     }
@@ -463,6 +348,9 @@
                     case 'idp':
                         viewHtml = this.getIdpView();
                         break;
+                    case 'settings':
+                        viewHtml = this.getSettingsView();
+                        break;
                 }
                 mainContent.innerHTML = `<div class="fade-in">${viewHtml}</div>`;
                 this.renderCharts();
@@ -475,6 +363,10 @@
                 }
                 if (this.state.currentView === 'strategy') {
                     this.addStrategyEventListeners();
+                }
+                if (this.state.currentView === 'settings') {
+                    this.loadSettingsToForm();
+                    this.addSettingsEventListeners();
                 }
             },
 
@@ -667,12 +559,6 @@ Keep it under 150 words - I need quick actionable advice!`;
                 modalBody.innerHTML = analysis.replace(/\n/g, '<br>');
             },
 
-            showSettings() {
-                const settingsModal = document.getElementById('settings-modal');
-                this.loadSettingsToForm();
-                this.addSettingsEventListeners();
-                settingsModal.classList.remove('hidden');
-            },
 
             loadSettingsToForm() {
                 const settings = this.state.leagueSettings;
@@ -686,6 +572,15 @@ Keep it under 150 words - I need quick actionable advice!`;
             },
 
             addSettingsEventListeners() {
+                // Remove existing listeners to prevent duplicates
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.replaceWith(btn.cloneNode(true));
+                });
+                document.getElementById('save-settings-btn').replaceWith(document.getElementById('save-settings-btn').cloneNode(true));
+                document.getElementById('reset-settings-btn').replaceWith(document.getElementById('reset-settings-btn').cloneNode(true));
+                document.getElementById('dark-mode-toggle').replaceWith(document.getElementById('dark-mode-toggle').cloneNode(true));
+
+                // Add fresh event listeners
                 document.querySelectorAll('.preset-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const preset = e.currentTarget.dataset.preset;
@@ -735,7 +630,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                 this.state.leagueSettings = newSettings;
                 localStorage.setItem('fantasyLeagueSettings', JSON.stringify(newSettings));
                 
-                document.getElementById('settings-modal').classList.add('hidden');
+                this.state.currentView = 'dashboard';
                 this.render();
                 this.updateDraftStatus();
                 
@@ -1165,6 +1060,101 @@ Keep it concise - I need quick actionable advice!`;
                                 </div>
                             </div>
                         `}).join('')}
+                    </div>
+                `;
+            },
+
+            getSettingsView() {
+                return `
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h2 class="text-3xl font-bold mb-6 text-slate-900">⚙️ League Settings</h2>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div>
+                                <h3 class="text-lg font-semibold mb-4 text-slate-800">League Format Presets</h3>
+                                <div class="space-y-3">
+                                    <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="standard">
+                                        <div class="font-semibold">Standard (15 players)</div>
+                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), K(1), DST(1) + 6 Bench</div>
+                                    </button>
+                                    <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="superflex">
+                                        <div class="font-semibold">Superflex (16 players)</div>
+                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1) + 6 Bench</div>
+                                    </button>
+                                    <button class="preset-btn w-full text-left p-4 bg-amber-100 rounded-lg hover:bg-amber-200 border-2 border-amber-300 transition-colors" data-preset="superflex-idp">
+                                        <div class="font-semibold">Superflex + IDP (Current)</div>
+                                        <div class="text-sm text-slate-600 mt-1">QB(2), RB(3), WR(4), TE(2), DL(2), LB(3), DB(2)</div>
+                                    </button>
+                                    <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="deep-idp">
+                                        <div class="font-semibold">Deep IDP (18-player)</div>
+                                        <div class="text-sm text-slate-600 mt-1">QB(2), RB(4), WR(5), TE(2), DL(2), LB(4), DB(3)</div>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold mb-4 text-slate-800">Custom Roster Targets</h3>
+                                <p class="text-sm text-slate-600 mb-4 italic">Note: These numbers include starters + bench for each position</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Quarterbacks</label>
+                                        <input type="number" id="qb-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Running Backs</label>
+                                        <input type="number" id="rb-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="8" value="3">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Wide Receivers</label>
+                                        <input type="number" id="wr-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="8" value="4">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Tight Ends</label>
+                                        <input type="number" id="te-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="4" value="2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Flex (RB/WR/TE)</label>
+                                        <input type="number" id="flex-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="3" value="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Superflex (QB/RB/WR/TE)</label>
+                                        <input type="number" id="sf-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Kickers</label>
+                                        <input type="number" id="k-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Defense/ST</label>
+                                        <input type="number" id="dst-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="2" value="0">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Defensive Line</label>
+                                        <input type="number" id="dl-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Linebackers</label>
+                                        <input type="number" id="lb-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="6" value="3">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Defensive Backs</label>
+                                        <input type="number" id="db-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex flex-wrap gap-3">
+                                    <button id="save-settings-btn" class="bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 transition-colors">Save Settings</button>
+                                    <button id="reset-settings-btn" class="bg-slate-300 text-slate-700 px-6 py-2 rounded-lg hover:bg-slate-400 transition-colors">Reset</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 pt-6 border-t border-slate-300">
+                            <h3 class="text-lg font-semibold mb-4 text-slate-800">Appearance</h3>
+                            <div class="flex items-center justify-between max-w-xs">
+                                <span class="text-slate-700 font-medium">Dark Mode</span>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="dark-mode-toggle" class="sr-only peer">
+                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 `;
             },
