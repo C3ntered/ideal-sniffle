@@ -231,7 +231,7 @@
                 myPickCount: 0,
                 displayedPlayerCount: 100,
                 leagueSettings: {
-                    QB: 2, RB: 3, WR: 4, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 3, DB: 2
+                    QB: 1, RB: 1, WR: 2, TE: 1, K: 0, DST: 0, FLEX: 4, SF: 1, DL: 1, LB: 1, DB: 1, BENCH: 7
                 },
                 darkMode: false
             },
@@ -239,7 +239,7 @@
             presets: {
                 'standard': { QB: 2, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, FLEX: 1, SF: 0, DL: 0, LB: 0, DB: 0 },
                 'superflex': { QB: 3, RB: 4, WR: 4, TE: 2, K: 1, DST: 1, FLEX: 1, SF: 1, DL: 0, LB: 0, DB: 0 },
-                'superflex-idp': { QB: 2, RB: 4, WR: 5, TE: 2, K: 0, DST: 0, FLEX: 3, SF: 1, DL: 1, LB: 1, DB: 1 },
+                'superflex-idp': { QB: 1, RB: 1, WR: 2, TE: 1, K: 0, DST: 0, FLEX: 4, SF: 1, DL: 1, LB: 1, DB: 1, BENCH: 7 },
                 'deep-idp': { QB: 2, RB: 4, WR: 5, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 4, DB: 3 }
             },
             
@@ -480,8 +480,8 @@
                         </div>
                         <div class="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
                              <h2 class="text-2xl font-bold mb-4 text-slate-900">Foundational Principles</h2>
-                             <p class="text-slate-600 mb-4">Success starts with understanding the core concepts of your league. Your specific rules for scoring, rosters (Superflex, IDP), and league size are the most critical factors in determining player value. This dashboard is tailored to a 10-team, Superflex, IDP format, which places a massive premium on quarterbacks and requires a balanced approach to drafting both offense and defense.</p>
-                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                             <p class="text-slate-600 mb-4">Success starts with understanding the core concepts of your league. Your specific rules for scoring, rosters (Superflex, IDP), and league size are the most critical factors in determining player value. This dashboard is tailored to a 10-team, Superflex, IDP format with 20 roster spots (13 starters + 7 bench).</p>
+                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
                                 <div class="bg-amber-50 p-4 rounded-lg">
                                     <h3 class="font-semibold text-amber-800">Superflex is King</h3>
                                     <p class="text-sm text-amber-700">In this format, QBs are the most valuable assets. Securing two reliable starters is paramount.</p>
@@ -493,6 +493,10 @@
                                  <div class="bg-emerald-50 p-4 rounded-lg">
                                     <h3 class="font-semibold text-emerald-800">Tiers Over Ranks</h3>
                                     <p class="text-sm text-emerald-700">Draft from the best available tier, not just the next player on a list. Avoid reaching.</p>
+                                </div>
+                                <div class="bg-purple-50 p-4 rounded-lg">
+                                    <h3 class="font-semibold text-purple-800">Bench Strategy</h3>
+                                    <p class="text-sm text-purple-700">Your 7 bench spots should cover bye weeks and injuries. Prioritize handcuffs and upside over floor.</p>
                                 </div>
                              </div>
                         </div>
@@ -657,7 +661,7 @@ Keep it under 150 words - I need quick actionable advice!`;
 
             saveSettings() {
                 const newSettings = {};
-                ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SF', 'K', 'DST', 'DL', 'LB', 'DB'].forEach(pos => {
+                ['QB', 'RB', 'WR', 'TE', 'FLEX', 'SF', 'K', 'DST', 'DL', 'LB', 'DB', 'BENCH'].forEach(pos => {
                     const input = document.getElementById(`${pos.toLowerCase()}-target`);
                     newSettings[pos] = parseInt(input.value) || 0;
                 });
@@ -1251,8 +1255,8 @@ Keep it concise - I need quick actionable advice!`;
                                         <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(2), WR(2), TE(1), Flex(1), SF(1), K(1), DST(1) + 7 Bench</div>
                                     </button>
                                     <button class="preset-btn w-full text-left p-4 bg-amber-100 rounded-lg hover:bg-amber-200 border-2 border-amber-300 transition-colors" data-preset="superflex-idp">
-                                        <div class="font-semibold">Superflex + IDP (18 players)</div>
-                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(1), WR(2), TE(1), Flex(3), SF(1), DL(1), LB(1), DB(1) + 7 Bench</div>
+                                        <div class="font-semibold">Superflex + IDP (20 players)</div>
+                                        <div class="text-sm text-slate-600 mt-1">Starters: QB(1), RB(1), WR(2), TE(1), Flex(4), SF(1), DL(1), LB(1), DB(1) + 7 Bench = 20 Total</div>
                                     </button>
                                     <button class="preset-btn w-full text-left p-4 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors" data-preset="deep-idp">
                                         <div class="font-semibold">Deep IDP (18-player)</div>
@@ -1307,6 +1311,10 @@ Keep it concise - I need quick actionable advice!`;
                                     <div>
                                         <label class="block text-sm font-medium text-slate-700 mb-1">Defensive Backs</label>
                                         <input type="number" id="db-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="5" value="2">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-700 mb-1">Bench</label>
+                                        <input type="number" id="bench-target" class="w-full p-2 border border-slate-300 rounded" min="0" max="10" value="7">
                                     </div>
                                 </div>
                                 <div class="mt-6 flex flex-wrap gap-3">
