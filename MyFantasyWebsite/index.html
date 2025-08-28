@@ -229,6 +229,7 @@
                 draftedPlayers: new Set(),
                 myTeam: [],
                 myPickCount: 0,
+                displayedPlayerCount: 100,
                 leagueSettings: {
                     QB: 2, RB: 3, WR: 4, TE: 2, K: 0, DST: 0, FLEX: 0, SF: 0, DL: 2, LB: 3, DB: 2
                 },
@@ -273,17 +274,25 @@
                     });
 
                     this.state.players = playerData
-                        .map(p => ({
-                            id: p.id,
-                            ovr: parseInt(p.ovr, 10),
-                            name: p.name,
-                            pos: p.pos,
-                            team: p.team,
-                            isAvailable: true,
-                            bye_week: p.bye_week
-                            // PPR rank is not in this data, so we remove it
-                        }))
-                        .sort((a, b) => a.ovr - b.ovr);
+                        .map(p => {
+                            // Determine if player is offensive or defensive
+                            const offensivePositions = ['QB', 'RB', 'WR', 'TE', 'K'];
+                            const isOffensive = offensivePositions.includes(p.pos);
+                            
+                            return {
+                                id: p.id,
+                                ovr: parseInt(p.ovr, 10),
+                                name: p.name,
+                                pos: p.pos,
+                                team: p.team,
+                                isAvailable: true,
+                                bye_week: p.bye_week,
+                                off_rank: p.off_rank ? parseInt(p.off_rank, 10) : null,
+                                def_rank: p.def_rank ? parseInt(p.def_rank, 10) : null,
+                                display_rank: isOffensive ? parseInt(p.off_rank || p.ovr, 10) : parseInt(p.def_rank || p.ovr, 10)
+                            };
+                        })
+                        .sort((a, b) => a.display_rank - b.display_rank);
 
                     this.state.filteredPlayers = this.state.players;
 
@@ -736,6 +745,8 @@ Keep it under 150 words - I need quick actionable advice!`;
                     return nameMatch && posMatch && statusMatch;
                 });
 
+                // Reset displayed count when filters change
+                this.state.displayedPlayerCount = 100;
                 this.renderTable();
             },
 
@@ -744,9 +755,12 @@ Keep it under 150 words - I need quick actionable advice!`;
                 if (!table) return;
                 
                 let sortedPlayers = [...this.state.filteredPlayers];
-                sortedPlayers.sort((a,b) => a.ovr - b.ovr);
+                sortedPlayers.sort((a,b) => a.display_rank - b.display_rank);
                 
                 this.updateDraftStatus();
+
+                const displayedPlayers = sortedPlayers.slice(0, this.state.displayedPlayerCount);
+                const hasMorePlayers = sortedPlayers.length > this.state.displayedPlayerCount;
 
                 table.innerHTML = `
                     <thead>
@@ -760,9 +774,9 @@ Keep it under 150 words - I need quick actionable advice!`;
                         </tr>
                     </thead>
                     <tbody>
-                        ${sortedPlayers.slice(0, 250).map(p => `
+                        ${displayedPlayers.map(p => `
                             <tr class="border-b border-slate-200 hover:bg-slate-50 ${!p.isAvailable ? 'drafted' : ''}">
-                                <td class="p-3 font-bold text-amber-600">${p.ovr}</td>
+                                <td class="p-3 font-bold text-amber-600">${p.display_rank}${['QB', 'RB', 'WR', 'TE', 'K'].includes(p.pos) ? '' : '<span class="text-xs text-slate-500 ml-1">D</span>'}</td>
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
@@ -777,6 +791,15 @@ Keep it under 150 words - I need quick actionable advice!`;
                                 </td>
                             </tr>
                         `).join('')}
+                        ${hasMorePlayers ? `
+                            <tr class="border-b border-slate-200">
+                                <td colspan="6" class="p-4 text-center">
+                                    <button id="load-more-btn" class="bg-amber-500 text-white font-semibold py-2 px-4 rounded hover:bg-amber-600 transition-colors">
+                                        Load More Players (${sortedPlayers.length - this.state.displayedPlayerCount} remaining)
+                                    </button>
+                                </td>
+                            </tr>
+                        ` : ''}
                     </tbody>
                 `;
 
@@ -801,6 +824,15 @@ Keep it under 150 words - I need quick actionable advice!`;
                         this.handleDraft(playerId, true);
                     });
                 });
+
+                // Add load more button event listener
+                const loadMoreBtn = document.getElementById('load-more-btn');
+                if (loadMoreBtn) {
+                    loadMoreBtn.addEventListener('click', () => {
+                        this.state.displayedPlayerCount += 50;
+                        this.renderTable();
+                    });
+                }
             },
 
             async callGeminiAPI(prompt, retries = 2) {
@@ -988,11 +1020,11 @@ Keep it concise - I need quick actionable advice!`;
             getIdpView() {
                 const activePositions = this.getActivePositions();
                 const allTiers = {
-                    DL: this.state.players.filter(p => p.pos === 'DL').sort((a,b) => a.ovr - b.ovr),
-                    LB: this.state.players.filter(p => p.pos === 'LB').sort((a,b) => a.ovr - b.ovr),
-                    DB: this.state.players.filter(p => p.pos === 'DB').sort((a,b) => a.ovr - b.ovr),
-                    K: this.state.players.filter(p => p.pos === 'K').sort((a,b) => a.ovr - b.ovr),
-                    DEF: this.state.players.filter(p => p.pos === 'DEF').sort((a,b) => a.ovr - b.ovr),
+                    DL: this.state.players.filter(p => p.pos === 'DL').sort((a,b) => a.display_rank - b.display_rank),
+                    LB: this.state.players.filter(p => p.pos === 'LB').sort((a,b) => a.display_rank - b.display_rank),
+                    DB: this.state.players.filter(p => p.pos === 'DB').sort((a,b) => a.display_rank - b.display_rank),
+                    K: this.state.players.filter(p => p.pos === 'K').sort((a,b) => a.display_rank - b.display_rank),
+                    DEF: this.state.players.filter(p => p.pos === 'DEF').sort((a,b) => a.display_rank - b.display_rank),
                 };
                 
                 // Only include positions that are active in league settings
