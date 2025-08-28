@@ -294,7 +294,9 @@
                         })
                         .sort((a, b) => a.display_rank - b.display_rank);
 
-                    this.state.filteredPlayers = this.state.players;
+                    // Initially show only offensive players in rankings
+                    const offensivePositions = ['QB', 'RB', 'WR', 'TE', 'K'];
+                    this.state.filteredPlayers = this.state.players.filter(p => offensivePositions.includes(p.pos));
 
                 } catch (error) {
                     console.error("Error loading player data:", error);
@@ -384,6 +386,9 @@
                 }
                 if (this.state.currentView === 'strategy') {
                     this.addStrategyEventListeners();
+                }
+                if (this.state.currentView === 'idp') {
+                    this.addDefenseEventListeners();
                 }
                 if (this.state.currentView === 'settings') {
                     this.loadSettingsToForm();
@@ -493,7 +498,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 md:col-span-2 lg:col-span-1">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
-                                ${this.getPositionFilterOptions()}
+                                ${this.getOffensivePositionFilterOptions()}
                             </select>
                              <select id="statusFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
                                 <option value="ALL">All Players</option>
@@ -722,6 +727,24 @@ Keep it under 150 words - I need quick actionable advice!`;
                 return options;
             },
 
+            getOffensivePositionFilterOptions() {
+                let options = '<option value="ALL">All Positions</option>';
+                
+                const offensivePositions = [
+                    { setting: 'QB', display: 'QB' },
+                    { setting: 'RB', display: 'RB' },
+                    { setting: 'WR', display: 'WR' },
+                    { setting: 'TE', display: 'TE' },
+                    { setting: 'K', display: 'K' }
+                ];
+                
+                offensivePositions.forEach(({ setting, display }) => {
+                    options += `<option value="${display}">${display}</option>`;
+                });
+                
+                return options;
+            },
+
             addRankingsEventListeners() {
                 document.getElementById('searchInput').addEventListener('input', () => this.filterAndRenderTable());
                 document.getElementById('posFilter').addEventListener('change', () => this.filterAndRenderTable());
@@ -738,11 +761,15 @@ Keep it under 150 words - I need quick actionable advice!`;
                 const posFilter = document.getElementById('posFilter').value;
                 const statusFilter = document.getElementById('statusFilter').value;
                 
+                // Only show offensive players in main rankings
+                const offensivePositions = ['QB', 'RB', 'WR', 'TE', 'K'];
+                
                 this.state.filteredPlayers = this.state.players.filter(p => {
                     const nameMatch = p.name.toLowerCase().includes(searchTerm);
                     const posMatch = posFilter === 'ALL' || p.pos === posFilter;
                     const statusMatch = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' && p.isAvailable);
-                    return nameMatch && posMatch && statusMatch;
+                    const isOffensive = offensivePositions.includes(p.pos);
+                    return nameMatch && posMatch && statusMatch && isOffensive;
                 });
 
                 // Reset displayed count when filters change
@@ -776,7 +803,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                     <tbody>
                         ${displayedPlayers.map(p => `
                             <tr class="border-b border-slate-200 hover:bg-slate-50 ${!p.isAvailable ? 'drafted' : ''}">
-                                <td class="p-3 font-bold text-amber-600">${p.display_rank}${['QB', 'RB', 'WR', 'TE', 'K'].includes(p.pos) ? '' : '<span class="text-xs text-slate-500 ml-1">D</span>'}</td>
+                                <td class="p-3 font-bold text-amber-600">${p.display_rank}</td>
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
@@ -1018,83 +1045,179 @@ Keep it concise - I need quick actionable advice!`;
             },
             
             getIdpView() {
-                const activePositions = this.getActivePositions();
-                const allTiers = {
-                    DL: this.state.players.filter(p => p.pos === 'DL').sort((a,b) => a.display_rank - b.display_rank),
-                    LB: this.state.players.filter(p => p.pos === 'LB').sort((a,b) => a.display_rank - b.display_rank),
-                    DB: this.state.players.filter(p => p.pos === 'DB').sort((a,b) => a.display_rank - b.display_rank),
-                    K: this.state.players.filter(p => p.pos === 'K').sort((a,b) => a.display_rank - b.display_rank),
-                    DEF: this.state.players.filter(p => p.pos === 'DEF').sort((a,b) => a.display_rank - b.display_rank),
-                };
-                
-                // Only include positions that are active in league settings
-                const idpTiers = {};
-                Object.keys(allTiers).forEach(pos => {
-                    if (activePositions.includes(pos) || activePositions.includes('DST') && pos === 'DEF') {
-                        idpTiers[pos] = allTiers[pos];
-                    }
-                });
-                if (Object.keys(idpTiers).length === 0) {
-                    return `
-                        <div class="text-center">
-                            <h2 class="text-3xl font-bold text-slate-900 mb-4">Defense, Kickers & IDP Guide</h2>
-                            <div class="bg-slate-100 p-8 rounded-lg">
-                                <p class="text-slate-600">No defensive positions configured in your league settings.</p>
-                                <p class="text-slate-500 text-sm mt-2">Add K, DST, DL, LB, or DB positions in Settings to see guidance.</p>
-                            </div>
-                        </div>
-                    `;
-                }
-                
                 return `
-                    <div class="text-center mb-8">
-                        <h2 class="text-3xl font-bold text-slate-900">Defense, Kickers & IDP Guide</h2>
-                        <p class="text-slate-600 mt-2 max-w-3xl mx-auto">Draft strategy for defensive positions varies by league format. Standard leagues need K/DEF in late rounds, while IDP leagues require individual defensive players with different approaches for each position.</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        ${Object.keys(idpTiers).map(pos => {
-                            const positionInfo = {
-                                'DL': { name: 'Defensive Linemen', desc: 'Focus on elite edge rushers who can get double-digit sacks.', important: false },
-                                'LB': { name: 'Linebackers', desc: 'Target every-down players who rack up tackles. They are the RBs of the defense.', important: true },
-                                'DB': { name: 'Defensive Backs', desc: 'Prioritize box safeties who play near the line of scrimmage for consistent tackle numbers.', important: false },
-                                'K': { name: 'Kickers', desc: 'Wait until final rounds. Target kickers on high-scoring offenses and dome teams.', important: false },
-                                'DEF': { name: 'Team Defense', desc: 'Stream defenses based on matchups. Target teams facing turnover-prone QBs.', important: false }
-                            };
-                            return `
-                            <div class="bg-white p-6 rounded-lg shadow-md">
-                                <h3 class="text-2xl font-bold mb-4 text-center">${positionInfo[pos].name}</h3>
-                                ${positionInfo[pos].important ? '<p class="text-sm text-center font-semibold text-amber-600 mb-4">THE MOST IMPORTANT IDP POSITION</p>' : ''}
-                                <p class="text-slate-600 mb-4 text-sm">${positionInfo[pos].desc}</p>
-                                <div class="space-y-3">
-                                    ${idpTiers[pos].length > 0 ? `
-                                    <div>
-                                        <p class="font-bold text-slate-800">Tier 1 (Elite)</p>
-                                        <ul class="text-sm text-slate-600 list-disc list-inside">
-                                            ${idpTiers[pos].slice(0, 4).map(p => `<li>${p.name}</li>`).join('')}
-                                        </ul>
-                                    </div>
-                                    <div>
-                                        <p class="font-bold text-slate-800">Tier 2 (High-End)</p>
-                                        <ul class="text-sm text-slate-600 list-disc list-inside">
-                                             ${idpTiers[pos].slice(4, 8).map(p => `<li>${p.name}</li>`).join('')}
-                                        </ul>
-                                    </div>
-                                    ` : `
-                                    <div>
-                                        <p class="font-bold text-slate-800">Top Targets</p>
-                                        <ul class="text-sm text-slate-600 list-disc list-inside">
-                                            ${pos === 'K' ? '<li>Justin Tucker</li><li>Harrison Butker</li><li>Tyler Bass</li>' : ''}
-                                            ${pos === 'DEF' ? '<li>San Francisco 49ers</li><li>Dallas Cowboys</li><li>Buffalo Bills</li>' : ''}
-                                            ${pos === 'DL' ? '<li>Nolan Smith Jr.</li><li>Chase Young</li>' : ''}
-                                            ${pos === 'LB' ? '<li>Tyrice Knight</li><li>Jaylon Carlies</li>' : ''}
-                                            ${pos === 'DB' ? '<li>Tykee Smith</li><li>Lathan Ransom</li>' : ''}
-                                        </ul>
-                                    </div>`}
-                                </div>
-                            </div>
-                        `}).join('')}
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
+                            <h2 class="text-xl md:text-2xl font-bold text-slate-900">Defense Rankings</h2>
+                            <div id="defense-draft-status" class="text-xs md:text-sm font-semibold bg-amber-100 px-2 md:px-3 py-1 rounded text-center">My Picks: ${this.state.myPickCount}/${this.getTotalPicks()} | ${this.getTotalPicks() - this.state.myPickCount} remaining</div>
+                        </div>
+                        <p class="text-slate-600 mb-6">Defensive player rankings for IDP leagues. 📊=Analyze, ✓=Draft (others), MY=Draft (your team)</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 mb-4">
+                            <input type="text" id="defenseSearchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 md:col-span-2 lg:col-span-1">
+                            <select id="defensePosFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                ${this.getDefensivePositionFilterOptions()}
+                            </select>
+                             <select id="defenseStatusFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <option value="ALL">All Players</option>
+                                <option value="AVAILABLE">Available Only</option>
+                            </select>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left" id="defenseRankingsTable">
+                                </table>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-500 bg-slate-50 p-2 rounded">
+                            <strong>Quick Keys:</strong> Ctrl+1 (Dashboard) • Ctrl+2 (Rankings) • Esc (Close Modal)
+                        </div>
                     </div>
                 `;
+            },
+
+            getDefensivePositionFilterOptions() {
+                let options = '<option value="ALL">All Positions</option>';
+                
+                const defensivePositions = [
+                    { setting: 'LB', display: 'LB' },
+                    { setting: 'DL', display: 'DL' },
+                    { setting: 'DB', display: 'DB' },
+                    { setting: 'DST', display: 'DST' }
+                ];
+                
+                defensivePositions.forEach(({ setting, display }) => {
+                    options += `<option value="${display}">${display}</option>`;
+                });
+                
+                return options;
+            },
+
+            filterAndRenderDefenseTable() {
+                const searchTerm = document.getElementById('defenseSearchInput').value.toLowerCase();
+                const posFilter = document.getElementById('defensePosFilter').value;
+                const statusFilter = document.getElementById('defenseStatusFilter').value;
+                
+                // Only show defensive players
+                const defensivePositions = ['LB', 'DL', 'DB', 'DST'];
+                
+                this.state.defenseFilteredPlayers = this.state.players.filter(p => {
+                    const nameMatch = p.name.toLowerCase().includes(searchTerm);
+                    const posMatch = posFilter === 'ALL' || p.pos === posFilter;
+                    const statusMatch = statusFilter === 'ALL' || (statusFilter === 'AVAILABLE' && p.isAvailable);
+                    const isDefensive = defensivePositions.includes(p.pos);
+                    return nameMatch && posMatch && statusMatch && isDefensive;
+                });
+
+                // Reset displayed count when filters change
+                if (!this.state.defenseDisplayedPlayerCount) {
+                    this.state.defenseDisplayedPlayerCount = 100;
+                } else {
+                    this.state.defenseDisplayedPlayerCount = 100;
+                }
+                this.renderDefenseTable();
+            },
+
+            renderDefenseTable() {
+                const table = document.getElementById('defenseRankingsTable');
+                if (!table) return;
+                
+                if (!this.state.defenseFilteredPlayers) {
+                    const defensivePositions = ['LB', 'DL', 'DB', 'DST'];
+                    this.state.defenseFilteredPlayers = this.state.players.filter(p => defensivePositions.includes(p.pos));
+                }
+                
+                if (!this.state.defenseDisplayedPlayerCount) {
+                    this.state.defenseDisplayedPlayerCount = 100;
+                }
+                
+                let sortedPlayers = [...this.state.defenseFilteredPlayers];
+                sortedPlayers.sort((a,b) => a.display_rank - b.display_rank);
+                
+                const displayedPlayers = sortedPlayers.slice(0, this.state.defenseDisplayedPlayerCount);
+                const hasMorePlayers = sortedPlayers.length > this.state.defenseDisplayedPlayerCount;
+
+                table.innerHTML = `
+                    <thead>
+                        <tr class="bg-slate-100">
+                            <th class="p-3 font-semibold">Rank</th>
+                            <th class="p-3 font-semibold">Player</th>
+                            <th class="p-3 font-semibold">Position</th>
+                            <th class="p-3 font-semibold">Team</th>
+                            <th class="p-3 font-semibold">Bye</th>
+                            <th class="p-3 font-semibold text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${displayedPlayers.map(p => `
+                            <tr class="border-b border-slate-200 hover:bg-slate-50 ${!p.isAvailable ? 'drafted' : ''}">
+                                <td class="p-3 font-bold text-amber-600">${p.display_rank}</td>
+                                <td class="p-3 font-semibold">${p.name}</td>
+                                <td class="p-3">${p.pos}</td>
+                                <td class="p-3">${p.team}</td>
+                                <td class="p-3 text-center">${p.bye_week || '-'}</td>
+                                <td class="p-3 text-center space-x-1">
+                                    <button data-player-id="${p.id}" class="analyze-btn bg-slate-200 text-slate-700 text-xs font-semibold py-1 px-2 rounded hover:bg-amber-200 transition-colors disabled:opacity-50"
+                                    ${!p.isAvailable ? 'disabled' : ''}>📊</button>
+                                    <button data-player-id="${p.id}" class="draft-btn bg-emerald-500 text-white text-xs font-semibold py-1 px-2 rounded hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                    ${!p.isAvailable ? 'disabled' : ''}>✓</button>
+                                    <button data-player-id="${p.id}" class="my-draft-btn bg-blue-500 text-white text-xs font-semibold py-1 px-2 rounded hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                    ${!p.isAvailable ? 'disabled' : ''}>MY</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                        ${hasMorePlayers ? `
+                            <tr class="border-b border-slate-200">
+                                <td colspan="6" class="p-4 text-center">
+                                    <button id="defense-load-more-btn" class="bg-amber-500 text-white font-semibold py-2 px-4 rounded hover:bg-amber-600 transition-colors">
+                                        Load More Players (${sortedPlayers.length - this.state.defenseDisplayedPlayerCount} remaining)
+                                    </button>
+                                </td>
+                            </tr>
+                        ` : ''}
+                    </tbody>
+                `;
+
+                // Add event listeners for defense table
+                document.querySelectorAll('.analyze-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const playerId = e.target.dataset.playerId;
+                        const player = this.state.players.find(p => p.id == playerId);
+                        this.showPlayerAnalysis(player);
+                    });
+                });
+
+                document.querySelectorAll('.draft-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const playerId = e.target.dataset.playerId;
+                        this.handleDraft(playerId, false);
+                    });
+                });
+
+                document.querySelectorAll('.my-draft-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const playerId = e.target.dataset.playerId;
+                        this.handleDraft(playerId, true);
+                    });
+                });
+
+                // Add defense load more button event listener
+                const defenseLoadMoreBtn = document.getElementById('defense-load-more-btn');
+                if (defenseLoadMoreBtn) {
+                    defenseLoadMoreBtn.addEventListener('click', () => {
+                        this.state.defenseDisplayedPlayerCount += 50;
+                        this.renderDefenseTable();
+                    });
+                }
+            },
+
+            addDefenseEventListeners() {
+                const searchInput = document.getElementById('defenseSearchInput');
+                const posFilter = document.getElementById('defensePosFilter');
+                const statusFilter = document.getElementById('defenseStatusFilter');
+                
+                if (searchInput) searchInput.addEventListener('input', () => this.filterAndRenderDefenseTable());
+                if (posFilter) posFilter.addEventListener('change', () => this.filterAndRenderDefenseTable());
+                if (statusFilter) statusFilter.addEventListener('change', () => this.filterAndRenderDefenseTable());
+                
+                this.renderDefenseTable();
             },
 
             getSettingsView() {
