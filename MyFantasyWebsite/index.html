@@ -412,13 +412,27 @@
                         this.state.myPickCount++;
                     }
                     
+                    // Update both tables if they exist
                     this.renderTable();
+                    if (document.getElementById('defenseRankingsTable')) {
+                        this.renderDefenseTable();
+                    }
                     this.updateDraftStatus();
+                    this.updateDefenseDraftStatus();
                 }
             },
 
             updateDraftStatus() {
                 const statusEl = document.getElementById('draft-status');
+                if (statusEl) {
+                    const totalPicks = this.getTotalPicks();
+                    const remaining = totalPicks - this.state.myPickCount;
+                    statusEl.textContent = `My Picks: ${this.state.myPickCount}/${totalPicks} | ${remaining} remaining`;
+                }
+            },
+
+            updateDefenseDraftStatus() {
+                const statusEl = document.getElementById('defense-draft-status');
                 if (statusEl) {
                     const totalPicks = this.getTotalPicks();
                     const remaining = totalPicks - this.state.myPickCount;
@@ -830,7 +844,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                     </tbody>
                 `;
 
-                document.querySelectorAll('.analyze-btn').forEach(btn => {
+                document.querySelectorAll('#rankingsTable .analyze-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
                         const player = this.state.players.find(p => p.id == playerId);
@@ -838,14 +852,14 @@ Keep it under 150 words - I need quick actionable advice!`;
                     });
                 });
 
-                document.querySelectorAll('.draft-btn').forEach(btn => {
+                document.querySelectorAll('#rankingsTable .draft-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
                         this.handleDraft(playerId, false);
                     });
                 });
 
-                document.querySelectorAll('.my-draft-btn').forEach(btn => {
+                document.querySelectorAll('#rankingsTable .my-draft-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
                         this.handleDraft(playerId, true);
@@ -1175,8 +1189,8 @@ Keep it concise - I need quick actionable advice!`;
                     </tbody>
                 `;
 
-                // Add event listeners for defense table
-                document.querySelectorAll('.analyze-btn').forEach(btn => {
+                // Add event listeners for defense table only
+                document.querySelectorAll('#defenseRankingsTable .analyze-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
                         const player = this.state.players.find(p => p.id == playerId);
@@ -1184,14 +1198,14 @@ Keep it concise - I need quick actionable advice!`;
                     });
                 });
 
-                document.querySelectorAll('.draft-btn').forEach(btn => {
+                document.querySelectorAll('#defenseRankingsTable .draft-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
                         this.handleDraft(playerId, false);
                     });
                 });
 
-                document.querySelectorAll('.my-draft-btn').forEach(btn => {
+                document.querySelectorAll('#defenseRankingsTable .my-draft-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const playerId = e.target.dataset.playerId;
                         this.handleDraft(playerId, true);
