@@ -201,7 +201,7 @@
         <main id="main-content">
             <div class="flex justify-center items-center h-64">
                 <div class="spinner"></div>
-                <p class="ml-4 text-slate-600">Fetching latest player data from Sleeper...</p>
+                <p class="ml-4 text-slate-600">Loading player data...</p>
             </div>
         </main>
     </div>
@@ -253,33 +253,45 @@
             async fetchData() {
                 const mainContent = document.getElementById('main-content');
                 try {
-                    const functionUrl = `/.netlify/functions/sleeper`;
-                    const response = await fetch(functionUrl);
+                    // Fetch the local CSV file
+                    const response = await fetch('./player_data.csv');
                     if (!response.ok) {
-                        throw new Error(`Failed to fetch Sleeper data. Status: ${response.status}`);
+                        throw new Error(`Could not load player_data.csv. Status: ${response.status}`);
                     }
-                    const filteredData = await response.json();
+                    const csvText = await response.text();
                     
-                    this.state.players = filteredData
-                        .filter(p => p.adp)
-                        .map((p, index) => ({
-                            id: p.player_id,
-                            ovr: p.adp,
-                            name: p.full_name,
-                            pos: p.position,
+                    // Parse the CSV text
+                    const rows = csvText.trim().split('\n');
+                    const headers = rows.shift().split(',');
+                    const playerData = rows.map(row => {
+                        const values = row.split(',');
+                        let obj = {};
+                        headers.forEach((header, index) => {
+                            obj[header] = values[index];
+                        });
+                        return obj;
+                    });
+
+                    this.state.players = playerData
+                        .map(p => ({
+                            id: p.id,
+                            ovr: parseInt(p.ovr, 10),
+                            name: p.name,
+                            pos: p.pos,
                             team: p.team,
-                            isAvailable: true, // Track player availability
-                            pprRk: p.adp_ppr || p.adp
+                            isAvailable: true,
+                            bye_week: p.bye_week
+                            // PPR rank is not in this data, so we remove it
                         }))
                         .sort((a, b) => a.ovr - b.ovr);
 
                     this.state.filteredPlayers = this.state.players;
 
                 } catch (error) {
-                    console.error("Error fetching or processing Sleeper data:", error);
+                    console.error("Error loading player data:", error);
                     mainContent.innerHTML = `<div class="text-center p-8 bg-red-100 text-red-700 rounded-lg">
                         <h2 class="font-bold text-xl">Failed to Load Player Data</h2>
-                        <p>There was an error fetching the latest player rankings from Sleeper. Please try refreshing the page.</p>
+                        <p>Make sure the 'player_data.csv' file is in the same directory as this HTML file.</p>
                     </div>`;
                 }
             },
@@ -461,14 +473,15 @@
             },
             
             getRankingsView() {
+                // Since PPR rank is not in our new data, we remove the selector for it.
                 return `
                     <div class="bg-white p-6 rounded-lg shadow-md">
                         <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
                             <h2 class="text-xl md:text-2xl font-bold text-slate-900">Player Rankings</h2>
                             <div id="draft-status" class="text-xs md:text-sm font-semibold bg-amber-100 px-2 md:px-3 py-1 rounded text-center">My Picks: 0/${this.getTotalPicks()} | ${this.getTotalPicks()} remaining</div>
                         </div>
-                        <p class="text-slate-600 mb-6">Live data from Sleeper API. 📊=Analyze, ✓=Draft (others), MY=Draft (your team)</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 mb-4">
+                        <p class="text-slate-600 mb-6">Player data loaded from local file. 📊=Analyze, ✓=Draft (others), MY=Draft (your team)</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 mb-4">
                             <input type="text" id="searchInput" placeholder="Search player name..." class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 md:col-span-2 lg:col-span-1">
                             <select id="posFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
                                 ${this.getPositionFilterOptions()}
@@ -476,10 +489,6 @@
                              <select id="statusFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
                                 <option value="ALL">All Players</option>
                                 <option value="AVAILABLE">Available Only</option>
-                            </select>
-                            <select id="scoringFilter" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
-                                <option value="ovr">Overall Rank</option>
-                                <option value="pprRk">PPR Rank</option>
                             </select>
                         </div>
                         <div class="overflow-x-auto">
@@ -572,7 +581,6 @@ Keep it under 150 words - I need quick actionable advice!`;
             },
 
             addSettingsEventListeners() {
-                // Remove existing listeners to prevent duplicates
                 document.querySelectorAll('.preset-btn').forEach(btn => {
                     btn.replaceWith(btn.cloneNode(true));
                 });
@@ -580,7 +588,6 @@ Keep it under 150 words - I need quick actionable advice!`;
                 document.getElementById('reset-settings-btn').replaceWith(document.getElementById('reset-settings-btn').cloneNode(true));
                 document.getElementById('dark-mode-toggle').replaceWith(document.getElementById('dark-mode-toggle').cloneNode(true));
 
-                // Add fresh event listeners
                 document.querySelectorAll('.preset-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const preset = e.currentTarget.dataset.preset;
@@ -685,7 +692,6 @@ Keep it under 150 words - I need quick actionable advice!`;
                 
                 let options = '<option value="ALL">All Positions</option>';
                 
-                // Position mapping for display vs settings
                 const positionMap = [
                     { setting: 'QB', display: 'QB' },
                     { setting: 'RB', display: 'RB' },
@@ -711,7 +717,6 @@ Keep it under 150 words - I need quick actionable advice!`;
                 document.getElementById('searchInput').addEventListener('input', () => this.filterAndRenderTable());
                 document.getElementById('posFilter').addEventListener('change', () => this.filterAndRenderTable());
                 document.getElementById('statusFilter').addEventListener('change', () => this.filterAndRenderTable());
-                document.getElementById('scoringFilter').addEventListener('change', () => this.filterAndRenderTable());
                 this.renderTable();
             },
 
@@ -735,17 +740,11 @@ Keep it under 150 words - I need quick actionable advice!`;
             },
 
             renderTable() {
-                const scoringFormat = document.getElementById('scoringFilter')?.value || 'ovr';
                 const table = document.getElementById('rankingsTable');
                 if (!table) return;
                 
                 let sortedPlayers = [...this.state.filteredPlayers];
-                if(scoringFormat !== 'ovr') {
-                    sortedPlayers = sortedPlayers.filter(p => p[scoringFormat] !== undefined)
-                                                 .sort((a,b) => a[scoringFormat] - b[scoringFormat]);
-                } else {
-                    sortedPlayers.sort((a,b) => a.ovr - b.ovr);
-                }
+                sortedPlayers.sort((a,b) => a.ovr - b.ovr);
                 
                 this.updateDraftStatus();
 
@@ -763,7 +762,7 @@ Keep it under 150 words - I need quick actionable advice!`;
                     <tbody>
                         ${sortedPlayers.slice(0, 250).map(p => `
                             <tr class="border-b border-slate-200 hover:bg-slate-50 ${!p.isAvailable ? 'drafted' : ''}">
-                                <td class="p-3 font-bold text-amber-600">${Math.round(p[scoringFormat] || p.ovr)}</td>
+                                <td class="p-3 font-bold text-amber-600">${p.ovr}</td>
                                 <td class="p-3 font-semibold">${p.name}</td>
                                 <td class="p-3">${p.pos}</td>
                                 <td class="p-3">${p.team}</td>
