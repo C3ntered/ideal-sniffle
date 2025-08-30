@@ -196,7 +196,6 @@
         <header class="text-center mb-6 md:mb-8">
             <h1 class="text-2xl md:text-4xl lg:text-5xl font-bold text-slate-900 leading-tight">2025 Fantasy Football AI Dashboard</h1>
             <p class="text-slate-600 mt-2 text-sm md:text-lg px-4">Your interactive guide to dominating your Superflex & IDP league.</p>
-            <p2 class ="text-slate-600 mt-2 text-sm md:text-lg px-4"> Brought to you by Kai Holland!</p2>
         </header>
 
         <nav class="flex flex-wrap justify-center mb-8 bg-slate-200 rounded-lg p-2 shadow-inner gap-1">
@@ -482,6 +481,55 @@
                 this.state.myPickCount = 0;
                 
                 this.render();
+            },
+
+            findPlayerByName(searchName) {
+                if (!searchName) return null;
+                
+                const cleanName = (name) => {
+                    return name.toLowerCase()
+                        .replace(/[^\w\s]/g, '') // Remove punctuation
+                        .replace(/\s+/g, ' ')     // Normalize whitespace
+                        .trim();
+                };
+                
+                const cleanSearchName = cleanName(searchName);
+                
+                // Try exact match first
+                let match = this.state.players.find(p => 
+                    cleanName(p.name) === cleanSearchName
+                );
+                
+                if (match) return match;
+                
+                // Try partial match (last name, first name)
+                const searchParts = cleanSearchName.split(' ');
+                if (searchParts.length >= 2) {
+                    const searchLastName = searchParts[searchParts.length - 1];
+                    const searchFirstName = searchParts[0];
+                    
+                    match = this.state.players.find(p => {
+                        const playerParts = cleanName(p.name).split(' ');
+                        if (playerParts.length >= 2) {
+                            const playerLastName = playerParts[playerParts.length - 1];
+                            const playerFirstName = playerParts[0];
+                            return playerLastName === searchLastName && 
+                                   playerFirstName === searchFirstName;
+                        }
+                        return false;
+                    });
+                }
+                
+                if (match) return match;
+                
+                // Try fuzzy match (contains)
+                match = this.state.players.find(p => {
+                    const playerName = cleanName(p.name);
+                    return playerName.includes(cleanSearchName) || 
+                           cleanSearchName.includes(playerName);
+                });
+                
+                return match || null;
             },
 
             updateDraftStatus() {
@@ -1510,6 +1558,29 @@ Keep it concise - I need quick actionable advice!`;
         };
 
         document.addEventListener('DOMContentLoaded', () => App.init());
+
+        // Extension communication handler
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+            chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+                if (message.action === 'draft_pick') {
+                    console.log('Received draft pick from extension:', message.player);
+                    
+                    // Find matching player and draft them
+                    const matchedPlayer = App.findPlayerByName(message.player.name);
+                    if (matchedPlayer) {
+                        console.log('Found matching player:', matchedPlayer);
+                        App.handleDraft(matchedPlayer.id, message.player.isMyPick);
+                        sendResponse({status: 'success', player: matchedPlayer.name});
+                    } else {
+                        console.log('Player not found in database:', message.player.name);
+                        sendResponse({status: 'not_found', searchedName: message.player.name});
+                    }
+                } else if (message.action === 'test_connection') {
+                    console.log('Extension test connection received');
+                    sendResponse({status: 'connected', timestamp: new Date().toISOString()});
+                }
+            });
+        }
     </script>
 </body>
 </html>
