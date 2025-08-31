@@ -551,96 +551,105 @@
             },
 
             getDashboardView() {
-                return `
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold mb-4 text-slate-900">Draft Strategy Comparison</h2>
-                            <p class="text-slate-600 mb-4">This chart provides a high-level comparison of foundational draft strategies. Each approach carries different risks and rewards, influencing how you should allocate your early-round picks. Hover over the bars for a brief explanation of each strategy's core philosophy.</p>
-                            <div class="chart-container">
-                                <canvas id="strategyChart"></canvas>
+    return `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900">Draft Strategy Comparison</h2>
+                <p class="text-slate-600 mb-4">This chart provides a high-level comparison of foundational draft strategies. Each approach carries different risks and rewards, influencing how you should allocate your early-round picks. Hover over the bars for a brief explanation of each strategy's core philosophy.</p>
+                <div class="chart-container">
+                    <canvas id="strategyChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900">My Team</h2>
+                <div id="my-team-display" class="space-y-2">
+                    ${this.state.myTeam.length === 0 ? 
+                        '<p class="text-slate-500 italic">No players drafted yet</p>' : 
+                        this.state.myTeam.map(p => `
+                            <div class="flex justify-between items-center bg-green-50 p-2 rounded">
+                                <span class="font-semibold">${p.name}</span>
+                                <span class="text-sm bg-green-100 px-2 py-1 rounded">${p.pos}</span>
                             </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold mb-4 text-slate-900">My Team</h2>
-                            <div id="my-team-display" class="space-y-2">
-                                ${this.state.myTeam.length === 0 ? 
-                                    '<p class="text-slate-500 italic">No players drafted yet</p>' : 
-                                    this.state.myTeam.map(p => `
-                                        <div class="flex justify-between items-center bg-green-50 p-2 rounded">
-                                            <span class="font-semibold">${p.name}</span>
-                                            <span class="text-sm bg-green-100 px-2 py-1 rounded">${p.pos}</span>
-                                        </div>
-                                    `).join('')
-                                }
-                            </div>
-                            ${this.getPositionNeeds()}
-                            <div class="mt-4 text-center space-x-2">
-                                <button id="clear-team-btn" class="text-sm bg-slate-200 px-3 py-1 rounded hover:bg-slate-300">Clear Team</button>
-                                <button id="get-team-advice-btn" class="text-sm bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600">Get AI Advice</button>
-                            </div>
-                        </div>
-                        <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold mb-4 text-slate-900">📚 Drafted Players Archive</h2>
-                            <p class="text-slate-600 mb-4">Players that have been drafted. Click 'Undraft' to restore a player if accidentally drafted.</p>
-                            <div id="archived-players-display" class="max-h-64 overflow-y-auto">
-                                ${this.state.archivedPlayers.length === 0 ? 
-                                    '<p class="text-slate-500 italic">No players archived yet</p>' : 
-                                    this.state.archivedPlayers.map(p => `
-                                        <div class="flex justify-between items-center bg-slate-50 p-2 rounded mb-2 border">
-                                            <div class="flex-1">
-                                                <span class="font-semibold text-slate-700">${p.name}</span>
-                                                <span class="text-sm ml-2 bg-slate-200 px-2 py-1 rounded">${p.pos}</span>
-                                                <span class="text-xs text-slate-500 ml-2">${p.team}</span>
-                                                ${p.draftedByUser ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2">MY PICK</span>' : '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded ml-2">OTHER</span>'}
-                                            </div>
-                                            <button data-player-id="${p.id}" class="undraft-btn text-xs bg-amber-500 text-white px-2 py-1 rounded hover:bg-amber-600 transition-colors">
-                                                Undraft
-                                            </button>
-                                        </div>
-                                    `).join('')
-                                }
-                            </div>
-                            <div class="mt-4 text-center">
-                                <button id="clear-archive-btn" class="text-sm bg-slate-300 px-3 py-1 rounded hover:bg-slate-400" ${this.state.archivedPlayers.length === 0 ? 'disabled' : ''}>
-                                    Clear Archive
+                        `).join('')
+                    }
+                </div>
+                ${this.getPositionNeeds()}
+                <div class="mt-4 text-center space-x-2">
+                    <button id="clear-team-btn" class="text-sm bg-slate-200 px-3 py-1 rounded hover:bg-slate-300">Clear Team</button>
+                    <button id="get-team-advice-btn" class="text-sm bg-amber-500 text-white px-3 py-1 rounded hover:bg-amber-600">Get AI Advice</button>
+                </div>
+            </div>
+            <div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900">📚 Drafted Players Archive</h2>
+                <p class="text-slate-600 mb-4">Players that have been drafted. Click 'Undraft' to restore a player if accidentally drafted.</p>
+                <div id="archived-players-display" class="max-h-64 overflow-y-auto">
+                    ${this.state.archivedPlayers.length === 0 ? 
+                        '<p class="text-slate-500 italic">No players archived yet</p>' : 
+                        this.state.archivedPlayers.map(p => `
+                            <div class="flex justify-between items-center bg-slate-50 p-2 rounded mb-2 border">
+                                <div class="flex-1">
+                                    <span class="font-semibold text-slate-700">${p.name}</span>
+                                    <span class="text-sm ml-2 bg-slate-200 px-2 py-1 rounded">${p.pos}</span>
+                                    <span class="text-xs text-slate-500 ml-2">${p.team}</span>
+                                    ${p.draftedByUser ? '<span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded ml-2">MY PICK</span>' : '<span class="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded ml-2">OTHER</span>'}
+                                </div>
+                                <button data-player-id="${p.id}" class="undraft-btn text-xs bg-amber-500 text-white px-2 py-1 rounded hover:bg-amber-600 transition-colors">
+                                    Undraft
                                 </button>
                             </div>
-                        </div>
-                        <div class="bg-white p-6 rounded-lg shadow-md">
-                            <h2 class="text-2xl font-bold mb-4 text-slate-900">✨ AI Team Name Generator</h2>
-                            <p class="text-slate-600 mb-4">Need some inspiration for a team name? Enter a few keywords (like your favorite player, team, or an inside joke) and let our AI generate some creative options for you!</p>
-                            <div class="flex gap-2">
-                                <input type="text" id="name-generator-input" placeholder="e.g., 'Bijan, mustard, champion'" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
-                                <button id="name-generator-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-md hover:bg-amber-600 transition-colors">Generate Names</button>
-                            </div>
-                            <div id="name-generator-results" class="mt-4 p-4 bg-slate-50 rounded-md min-h-[100px]"></div>
-                        </div>
-                        <div class="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
-                             <h2 class="text-2xl font-bold mb-4 text-slate-900">Foundational Principles</h2>
-                             <p class="text-slate-600 mb-4">Success starts with understanding the core concepts of your league. Your specific rules for scoring, rosters (Superflex, IDP), and league size are the most critical factors in determining player value. This dashboard is tailored to a 10-team, Superflex, IDP format with 20 roster spots (13 starters + 7 bench).</p>
-                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
-                                <div class="bg-amber-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-amber-800">Superflex is King</h3>
-                                    <p class="text-sm text-amber-700">In this format, QBs are the most valuable assets. Securing two reliable starters is paramount.</p>
-                                </div>
-                                <div class="bg-sky-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-sky-800">Positional Scarcity</h3>
-                                    <p class="text-sm text-sky-700">Understand the drop-off in talent at each position. Elite RBs and TEs are rare commodities.</p>
-                                </div>
-                                 <div class="bg-emerald-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-emerald-800">Tiers Over Ranks</h3>
-                                    <p class="text-sm text-emerald-700">Draft from the best available tier, not just the next player on a list. Avoid reaching.</p>
-                                </div>
-                                <div class="bg-purple-50 p-4 rounded-lg">
-                                    <h3 class="font-semibold text-purple-800">Bench Strategy</h3>
-                                    <p class="text-sm text-purple-700">Your 7 bench spots should cover bye weeks and injuries. Prioritize handcuffs and upside over floor.</p>
-                                </div>
-                             </div>
-                        </div>
+                        `).join('')
+                    }
+                </div>
+                <div class="mt-4 text-center">
+                    <button id="clear-archive-btn" class="text-sm bg-slate-300 px-3 py-1 rounded hover:bg-slate-400" ${this.state.archivedPlayers.length === 0 ? 'disabled' : ''}>
+                        Clear Archive
+                    </button>
+                </div>
+            </div>
+
+            <!-- 📡 Live Draft Feed -->
+            <div class="bg-white p-6 rounded-lg shadow-md mt-6 lg:col-span-2">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900">📡 Live Draft Feed</h2>
+                <div id="live-draft-feed" class="space-y-2">
+                    <p class="text-slate-500 italic">Loading draft feed...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-2xl font-bold mb-4 text-slate-900">✨ AI Team Name Generator</h2>
+                <p class="text-slate-600 mb-4">Need some inspiration for a team name? Enter a few keywords (like your favorite player, team, or an inside joke) and let our AI generate some creative options for you!</p>
+                <div class="flex gap-2">
+                    <input type="text" id="name-generator-input" placeholder="e.g., 'Bijan, mustard, champion'" class="p-2 border border-slate-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500 flex-grow">
+                    <button id="name-generator-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-md hover:bg-amber-600 transition-colors">Generate Names</button>
+                </div>
+                <div id="name-generator-results" class="mt-4 p-4 bg-slate-50 rounded-md min-h-[100px]"></div>
+            </div>
+            <div class="md:col-span-2 lg:col-span-3 bg-white p-6 rounded-lg shadow-md">
+                 <h2 class="text-2xl font-bold mb-4 text-slate-900">Foundational Principles</h2>
+                 <p class="text-slate-600 mb-4">Success starts with understanding the core concepts of your league. Your specific rules for scoring, rosters (Superflex, IDP), and league size are the most critical factors in determining player value. This dashboard is tailored to a 10-team, Superflex, IDP format with 20 roster spots (13 starters + 7 bench).</p>
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                    <div class="bg-amber-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-amber-800">Superflex is King</h3>
+                        <p class="text-sm text-amber-700">In this format, QBs are the most valuable assets. Securing two reliable starters is paramount.</p>
                     </div>
-                `;
-            },
-            
+                    <div class="bg-sky-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-sky-800">Positional Scarcity</h3>
+                        <p class="text-sm text-sky-700">Understand the drop-off in talent at each position. Elite RBs and TEs are rare commodities.</p>
+                    </div>
+                     <div class="bg-emerald-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-emerald-800">Tiers Over Ranks</h3>
+                        <p class="text-sm text-emerald-700">Draft from the best available tier, not just the next player on a list. Avoid reaching.</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <h3 class="font-semibold text-purple-800">Bench Strategy</h3>
+                        <p class="text-sm text-purple-700">Your 7 bench spots should cover bye weeks and injuries. Prioritize handcuffs and upside over floor.</p>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    `;
+},
+
             getRankingsView() {
                 // Since PPR rank is not in our new data, we remove the selector for it.
                 return `
@@ -1582,5 +1591,49 @@ Keep it concise - I need quick actionable advice!`;
             });
         }
     </script>
+    <script>
+  async function loadDraftPicks(draftId) {
+    try {
+      const res = await fetch(
+        `https://kchprojects.org/.netlify/functions/ingest-pick?draftId=${draftId}`
+      );
+      const picks = await res.json();
+
+      const container = document.getElementById("live-draft-feed");
+      if (!container) return;
+
+      container.innerHTML = ""; // clear previous
+      if (picks.length === 0) {
+        container.innerHTML = `<p class="text-slate-500 italic">No picks recorded yet.</p>`;
+        return;
+      }
+
+      picks.forEach(pick => {
+        const div = document.createElement("div");
+        div.className =
+          "flex justify-between items-center bg-slate-50 p-2 rounded mb-1 border";
+        div.innerHTML = `
+          <span class="font-semibold text-slate-700">
+            ${pick.userId || "Someone"} drafted ${pick.playerName}
+          </span>
+          <span class="text-xs text-slate-500">
+            Pick #${pick.pickNumber || "-"}
+          </span>
+        `;
+        container.appendChild(div);
+      });
+    } catch (err) {
+      console.error("Failed to load picks", err);
+    }
+  }
+
+  // Get draftId from URL ?draftId=xyz or fallback
+  const urlParams = new URLSearchParams(window.location.search);
+  const draftId = urlParams.get("draftId") || "demo_draft";
+
+  // Auto-refresh every 5s
+  loadDraftPicks(draftId);
+  setInterval(() => loadDraftPicks(draftId), 5000);
+</script>
 </body>
 </html>
