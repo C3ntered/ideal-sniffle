@@ -1,8 +1,0 @@
-[build]
-  base = "."
-  publish = "."
-  command = ""            # (change if you actually have a build step)
-
-[functions]
-  directory = "netlify/functions"
-  node_bundler = "esbuild"
